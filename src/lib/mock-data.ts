@@ -17,7 +17,7 @@ export let mockUsers: User[] = [
     { id: '3', name: 'Customer Two', email: 'customer2@example.com', password: 'password', role: 'customer' },
 ];
 
-export const mockOrders: Order[] = [
+export let mockOrders: Order[] = [
     { id: 'PB-1001', userId: '2', items: [{...mockProducts[0], quantity: 2}, {...mockProducts[2], quantity: 1}], total: 14.48, status: 'Delivered', orderDate: '2023-10-26', deliveryAddress: '123 Main St, Anytown USA' },
     { id: 'PB-1002', userId: '3', items: [{...mockProducts[4], quantity: 4}], total: 27.96, status: 'Shipped', orderDate: '2023-10-28', deliveryAddress: '456 Oak Ave, Anytown USA' },
     { id: 'PB-1003', userId: '2', items: [{...mockProducts[1], quantity: 1}, {...mockProducts[3], quantity: 2}], total: 15.99, status: 'Processing', orderDate: '2023-11-01', deliveryAddress: '123 Main St, Anytown USA' },

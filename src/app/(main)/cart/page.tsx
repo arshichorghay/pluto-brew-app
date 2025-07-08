@@ -12,18 +12,29 @@ import { LocationSelector } from "@/components/location-selector";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { LocationInfo } from "@/lib/types";
+import type { LocationInfo, Order } from "@/lib/types";
+import { useAuth } from "@/context/auth-context";
+import { mockOrders, mockProducts } from "@/lib/mock-data";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
 
   const shippingFee = (locationInfo?.type === 'delivery' && cartTotal > 0) ? 5.00 : 0;
   const total = cartTotal + shippingFee;
 
   const handleCheckout = () => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Not logged in!",
+            description: "You must be logged in to place an order.",
+          });
+        return;
+    }
     if (cartItems.length === 0) {
       toast({
         variant: "destructive",
@@ -41,13 +52,56 @@ export default function CartPage() {
       return;
     }
 
+    const newOrder: Order = {
+        id: `PB-${Math.floor(Math.random() * 9000) + 1000}`,
+        userId: user.id,
+        items: cartItems,
+        total: total,
+        status: 'Pending',
+        orderDate: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+        deliveryAddress: locationInfo.address,
+    };
+
+    mockOrders.push(newOrder);
+
     toast({
-        title: "Demo Order Placed!",
-        description: `Your order for ${locationInfo.type} at ${locationInfo.address} has been successfully placed.`,
+        title: "Order Placed!",
+        description: `Your order #${newOrder.id} has been successfully placed.`,
     });
     clearCart();
     router.push('/orders');
   }
+
+  const handleDemoOrder = () => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Not logged in!",
+            description: "You must be logged in to place a demo order.",
+          });
+        return;
+    }
+    const demoItems = [
+        { ...mockProducts[1], quantity: 2 },
+        { ...mockProducts[4], quantity: 1 },
+    ];
+    const demoTotal = demoItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    const demoOrder: Order = {
+        id: `PB-DEMO-${Math.floor(Math.random() * 1000)}`,
+        userId: user.id,
+        items: demoItems,
+        total: demoTotal,
+        status: 'Processing',
+        orderDate: new Date().toLocaleDateString('en-CA'),
+        deliveryAddress: '123 Demo Street, Suite 42, Faketopia',
+    };
+
+    mockOrders.push(demoOrder);
+    toast({ title: "Demo Order Created!", description: `Order #${demoOrder.id} has been added to your orders.` });
+    router.push('/orders');
+  };
+
 
   return (
     <div className="container mx-auto py-8">
@@ -119,8 +173,9 @@ export default function CartPage() {
                         <p>${total.toFixed(2)}</p>
                     </div>
                 </CardContent>
-                <CardFooter>
-                    <Button size="lg" className="w-full" disabled={cartItems.length === 0} onClick={handleCheckout}>Proceed to Checkout</Button>
+                <CardFooter className="flex flex-col gap-2">
+                    <Button size="lg" className="w-full" onClick={handleCheckout}>Proceed to Checkout</Button>
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleDemoOrder}>Place Demo Order</Button>
                 </CardFooter>
             </Card>
             <LocationSelector onLocationChange={setLocationInfo} />
