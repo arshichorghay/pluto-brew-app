@@ -24,9 +24,9 @@ export function ProductDetailView({ product }: { product: Product }) {
             <Image
             alt={product.name}
             className="aspect-square object-cover border w-full rounded-lg overflow-hidden"
-            height={600}
-            src={product.imageUrl || 'https://placehold.co/600x600.png'}
-            width={600}
+            height={500}
+            src={product.imageUrl || 'https://placehold.co/500x500.png'}
+            width={500}
             data-ai-hint={product['data-ai-hint']}
             />
         </div>
