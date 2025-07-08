@@ -18,8 +18,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
 export function AuthForm() {
-  const [loginEmail, setLoginEmail] = useState("admin@plutobrew.com");
-  const [loginPassword, setLoginPassword] = useState("admin");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
