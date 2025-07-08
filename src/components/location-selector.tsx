@@ -110,6 +110,9 @@ function MapControl({ onLocationChange }: MapControlProps) {
     setDeliveryPin(newPin);
     const newAddress = `Lat: ${lat}, Lng: ${lng}`;
     setAddress(newAddress);
+    if (addressInputRef.current) {
+        addressInputRef.current.value = newAddress;
+    }
     toast({ title: 'Location Set', description: `Pin set to ${newAddress}` });
   };
 
@@ -124,6 +127,9 @@ function MapControl({ onLocationChange }: MapControlProps) {
     setLngInput(newPin.lng.toFixed(6));
     const newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
     setAddress(newAddress); 
+    if (addressInputRef.current) {
+        addressInputRef.current.value = newAddress;
+    }
     toast({ title: "Location Set", description: "Delivery pin updated on the map." });
   }
 
@@ -230,8 +236,6 @@ function MapControl({ onLocationChange }: MapControlProps) {
                         id="address-search" 
                         ref={addressInputRef}
                         placeholder="Start typing your delivery address..."
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
                     />
                 </div>
 
