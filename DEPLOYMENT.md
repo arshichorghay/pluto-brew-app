@@ -7,27 +7,12 @@ This guide provides step-by-step instructions to deploy your Pluto Brew applicat
 
 - You have a [Firebase](https://console.firebase.google.com/) account.
 - You have the Firebase CLI installed on your machine: `npm install -g firebase-tools`.
-- You have a Google Cloud account to get a Google Maps API Key.
+
+> **Note:** The Firebase connection details are hardcoded in `/src/lib/firebase.ts`. If you want to connect to a different Firebase project in the future, you will need to update the `firebaseConfig` object in that file with your own project's credentials from the Firebase Console.
 
 ---
 
-### Step 1: Set Up Environment Variables
-
-This is the most important step to ensure your app can connect to Firebase and Google Maps.
-
-1.  **Create `.env.local` file:** In the root directory of your project, create a new file and name it exactly `.env.local`.
-
-2.  **Copy from the example:** Copy the entire contents of the `.env.example` file and paste it into your new `.env.local` file.
-
-3.  **Fill in your keys:**
-    -   **Firebase Keys:** Go to your **Firebase Project Settings** > **General**. Scroll down to "Your apps" and find your web app. Select "Config" to see your keys (apiKey, authDomain, etc.). Copy and paste these values into `.env.local`.
-    -   **Google Maps Key:** Go to the [Google Cloud Console](https://console.cloud.google.com/). Make sure your project is selected, then search for and enable the "Maps JavaScript API" and "Places API". Go to "Credentials" to find or create your API key. Paste this key into `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
-
-    > **Note:** The `.gitignore` file is already configured to keep your `.env.local` file private and secure.
-
----
-
-### Step 2: Configure Your Firebase Project
+### Step 1: Configure Your Firebase Project
 
 1.  **Create a Firebase Project:** If you haven't already, go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
 
@@ -46,7 +31,7 @@ This is the most important step to ensure your app can connect to Firebase and G
 
 ---
 
-### Step 3: Build and Deploy
+### Step 2: Build and Deploy
 
 You're ready for takeoff!
 
