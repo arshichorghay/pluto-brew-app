@@ -1,27 +1,27 @@
 import type { Product, User, Order, Location } from './types';
 
 export const mockProducts: Product[] = [
-  { id: '1', name: 'Cosmic IPA', description: 'A hoppy IPA with notes of citrus and pine, brewed with galaxy hops.', price: 5.99, imageUrl: 'https://placehold.co/600x600.png', stock: 100, category: 'IPA', 'data-ai-hint': 'beer can' },
-  { id: '2', name: 'Stardust Stout', description: 'A rich and creamy stout with a hint of chocolate and coffee.', price: 6.49, imageUrl: 'https://placehold.co/600x600.png', stock: 80, category: 'Stout', 'data-ai-hint': 'beer can' },
-  { id: '3', name: 'Meteor Mead', description: 'A light and refreshing mead, perfect for a summer evening.', price: 7.99, imageUrl: 'https://placehold.co/600x600.png', stock: 120, category: 'Mead', 'data-ai-hint': 'beer bottle' },
-  { id: '4', name: 'Galaxy Gose', description: 'A tart and salty gose that is out of this world.', price: 4.99, imageUrl: 'https://placehold.co/600x600.png', stock: 60, category: 'Gose', 'data-ai-hint': 'beer can' },
-  { id: '5', name: 'Nebula Nectar', description: 'A hazy New England IPA bursting with tropical fruit flavors.', price: 6.99, imageUrl: 'https://placehold.co/600x600.png', stock: 90, category: 'IPA', 'data-ai-hint': 'beer can' },
-  { id: '6', name: 'Pulsar Pilsner', description: 'A crisp and clean pilsner with a noble hop character.', price: 4.50, imageUrl: 'https://placehold.co/600x600.png', stock: 150, category: 'Pilsner', 'data-ai-hint': 'beer bottle' },
-  { id: '7', name: 'Quasar Kolsch', description: 'A light and easy-drinking Kolsch style ale.', price: 5.25, imageUrl: 'https://placehold.co/600x600.png', stock: 75, category: 'Kolsch', 'data-ai-hint': 'beer glass' },
-  { id: '8', name: 'Solaris Saison', description: 'A spicy and fruity saison with a dry finish.', price: 6.00, imageUrl: 'https://placehold.co/600x600.png', stock: 85, category: 'Saison', 'data-ai-hint': 'beer bottle' },
+  { id: '1', name: 'Heineken', description: 'A classic pale lager with a mild, slightly bitter taste.', price: 4.99, imageUrl: 'https://placehold.co/600x600.png', stock: 150, category: 'Lager', 'data-ai-hint': 'heineken bottle' },
+  { id: '2', name: 'Guinness Draught', description: 'A legendary Irish dry stout, rich and creamy with a smooth finish.', price: 5.49, imageUrl: 'https://placehold.co/600x600.png', stock: 100, category: 'Stout', 'data-ai-hint': 'guinness glass' },
+  { id: '3', name: 'Corona Extra', description: 'A refreshing Mexican lager, perfect with a slice of lime.', price: 4.50, imageUrl: 'https://placehold.co/600x600.png', stock: 200, category: 'Lager', 'data-ai-hint': 'corona bottle' },
+  { id: '4', name: 'Stella Artois', description: 'A classic Belgian pilsner with a well-balanced, floral hop aroma.', price: 5.25, imageUrl: 'https://placehold.co/600x600.png', stock: 120, category: 'Pilsner', 'data-ai-hint': 'stella bottle' },
+  { id: '5', name: 'Blue Moon', description: 'A Belgian-style witbier, brewed with Valencia orange peel for a subtle sweetness.', price: 6.99, imageUrl: 'https://placehold.co/600x600.png', stock: 90, category: 'Witbier', 'data-ai-hint': 'blue moon glass' },
+  { id: '6', name: 'Lagunitas IPA', description: 'A well-rounded, highly drinkable IPA with a bit of caramel malt barley.', price: 6.50, imageUrl: 'https://placehold.co/600x600.png', stock: 80, category: 'IPA', 'data-ai-hint': 'ipa beer' },
+  { id: '7', name: 'Sierra Nevada Pale Ale', description: 'A delightful example of a classic American pale ale with pine and citrus notes.', price: 6.00, imageUrl: 'https://placehold.co/600x600.png', stock: 85, category: 'Pale Ale', 'data-ai-hint': 'pale ale can' },
+  { id: '8', name: 'Budweiser', description: 'An American-style pale lager, known for its crisp, clean taste.', price: 3.99, imageUrl: 'https://placehold.co/600x600.png', stock: 250, category: 'Lager', 'data-ai-hint': 'budweiser bottle' },
 ];
 
-export const mockUsers: User[] = [
-    { id: '1', name: 'Admin User', email: 'admin@plutobrew.com', role: 'admin'},
-    { id: '2', name: 'Customer One', email: 'customer1@example.com', role: 'customer' },
-    { id: '3', name: 'Customer Two', email: 'customer2@example.com', role: 'customer' },
+export let mockUsers: User[] = [
+    { id: '1', name: 'Admin User', email: 'admin@plutobrew.com', password: 'admin', role: 'admin'},
+    { id: '2', name: 'Customer One', email: 'customer1@example.com', password: 'password', role: 'customer' },
+    { id: '3', name: 'Customer Two', email: 'customer2@example.com', password: 'password', role: 'customer' },
 ];
 
 export const mockOrders: Order[] = [
-    { id: 'PB-1001', userId: '2', items: [{...mockProducts[0], quantity: 2}, {...mockProducts[2], quantity: 1}], total: 19.97, status: 'Delivered', orderDate: '2023-10-26', deliveryAddress: '123 Space St, Moon City' },
-    { id: 'PB-1002', userId: '3', items: [{...mockProducts[4], quantity: 4}], total: 27.96, status: 'Shipped', orderDate: '2023-10-28', deliveryAddress: '456 Star Ave, Jupiter Town' },
-    { id: 'PB-1003', userId: '2', items: [{...mockProducts[1], quantity: 1}, {...mockProducts[3], quantity: 2}], total: 16.47, status: 'Processing', orderDate: '2023-11-01', deliveryAddress: '123 Space St, Moon City' },
-    { id: 'PB-1004', userId: '3', items: [{...mockProducts[6], quantity: 6}], total: 31.50, status: 'Pending', orderDate: '2023-11-02', deliveryAddress: '456 Star Ave, Jupiter Town' },
+    { id: 'PB-1001', userId: '2', items: [{...mockProducts[0], quantity: 2}, {...mockProducts[2], quantity: 1}], total: 14.48, status: 'Delivered', orderDate: '2023-10-26', deliveryAddress: '123 Main St, Anytown USA' },
+    { id: 'PB-1002', userId: '3', items: [{...mockProducts[4], quantity: 4}], total: 27.96, status: 'Shipped', orderDate: '2023-10-28', deliveryAddress: '456 Oak Ave, Anytown USA' },
+    { id: 'PB-1003', userId: '2', items: [{...mockProducts[1], quantity: 1}, {...mockProducts[3], quantity: 2}], total: 15.99, status: 'Processing', orderDate: '2023-11-01', deliveryAddress: '123 Main St, Anytown USA' },
+    { id: 'PB-1004', userId: '3', items: [{...mockProducts[6], quantity: 2}], total: 12.00, status: 'Pending', orderDate: '2023-11-02', deliveryAddress: '456 Oak Ave, Anytown USA' },
 ];
 
 export const mockLocations: Location[] = [

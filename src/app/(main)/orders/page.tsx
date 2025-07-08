@@ -1,3 +1,6 @@
+
+"use client";
+
 import {
   Table,
   TableBody,
@@ -5,17 +8,45 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCaption,
 } from "@/components/ui/table";
 import { mockOrders } from "@/lib/mock-data";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/auth-context";
+import { useEffect, useState } from "react";
+import type { Order } from "@/lib/types";
+import Link from "next/link";
+import { ShoppingBag } from "lucide-react";
 
 export default function OrdersPage() {
+  const { user } = useAuth();
+  const [userOrders, setUserOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      const orders = mockOrders.filter(order => order.userId === user.id);
+      setUserOrders(orders);
+    }
+  }, [user]);
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl md:text-4xl font-headline mb-8">Your Orders</h1>
       <div className="border rounded-lg">
         <Table>
+          {userOrders.length === 0 && (
+            <TableCaption>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Orders Yet</h3>
+                    <p className="text-muted-foreground mb-4">You haven't placed any orders with us. Let's change that!</p>
+                    <Button asChild>
+                        <Link href="/marketplace">Browse Beers</Link>
+                    </Button>
+                </div>
+            </TableCaption>
+          )}
           <TableHeader>
             <TableRow>
               <TableHead>Order ID</TableHead>
@@ -26,7 +57,7 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockOrders.map((order) => (
+            {userOrders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">{order.id}</TableCell>
                 <TableCell>{order.orderDate}</TableCell>

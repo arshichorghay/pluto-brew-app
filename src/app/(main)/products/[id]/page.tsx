@@ -1,15 +1,26 @@
+
+"use client";
+
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { mockProducts } from "@/lib/mock-data";
 import { notFound } from "next/navigation";
 import { Minus, Plus, Star } from "lucide-react";
+import { useState } from "react";
+import { useCart } from "@/context/cart-context";
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
+  const [quantity, setQuantity] = useState(1);
+  const { addToCart } = useCart();
   const product = mockProducts.find((p) => p.id === params.id);
 
   if (!product) {
     notFound();
+  }
+
+  const handleQuantityChange = (amount: number) => {
+    setQuantity((prev) => Math.max(1, prev + amount));
   }
 
   return (
@@ -33,10 +44,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 <Star className="w-5 h-5 fill-primary" />
                 <Star className="w-5 h-5 fill-primary" />
                 <Star className="w-5 h-5 fill-primary" />
-                <Star className="w-5 h-5 fill-muted stroke-muted-foreground" />
+                <Star className="w-5 h-5 fill-primary" />
                 <Star className="w-5 h-5 fill-muted stroke-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">(12 reviews)</p>
+              <p className="text-sm text-muted-foreground">(34 reviews)</p>
             </div>
             <p className="text-2xl font-semibold">${product.price.toFixed(2)}</p>
           </div>
@@ -48,17 +59,17 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           <div className="flex items-center gap-4">
             <p>Quantity:</p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)}>
                 <Minus className="h-4 w-4" />
               </Button>
-              <span className="text-lg font-semibold w-8 text-center">1</span>
-              <Button variant="outline" size="icon">
+              <span className="text-lg font-semibold w-8 text-center">{quantity}</span>
+              <Button variant="outline" size="icon" onClick={() => handleQuantityChange(1)}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
           
-          <Button size="lg">Add to Cart</Button>
+          <Button size="lg" onClick={() => addToCart(product, quantity)}>Add to Cart</Button>
         </div>
       </div>
     </div>

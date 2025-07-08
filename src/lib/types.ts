@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string;
   role: 'customer' | 'admin';
 }
 
@@ -13,6 +14,7 @@ export interface Product {
   imageUrl: string;
   stock: number;
   category: string;
+  'data-ai-hint'?: string;
 }
 
 export interface CartItem extends Product {

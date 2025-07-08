@@ -1,3 +1,6 @@
+
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -12,12 +15,15 @@ import {
 } from "@/components/ui/card";
 import type { Product } from "@/lib/types";
 import { Badge } from "./ui/badge";
+import { useCart } from "@/context/cart-context";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { addToCart } = useCart();
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
        <CardHeader className="p-0 relative">
@@ -41,7 +47,7 @@ export function ProductCard({ product }: ProductCardProps) {
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <div className="text-lg font-semibold">${product.price.toFixed(2)}</div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => addToCart(product)}>
           <Plus className="mr-2 h-4 w-4" /> Add to Cart
         </Button>
       </CardFooter>

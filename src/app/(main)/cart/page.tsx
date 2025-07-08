@@ -1,37 +1,39 @@
+
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { mockProducts } from "@/lib/mock-data";
-import { Minus, Plus, Trash2 } from "lucide-react";
-import type { CartItem } from "@/lib/types";
-import { useState } from "react";
+import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { useCart } from "@/context/cart-context";
 import { LocationSelector } from "@/components/location-selector";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-
-const initialCartItems: CartItem[] = [
-  { ...mockProducts[0], quantity: 1 },
-  { ...mockProducts[4], quantity: 2 },
-];
+import Link from "next/link";
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
+  const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
 
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shippingFee = 5.0;
-  const total = subtotal + shippingFee;
+  const shippingFee = cartTotal > 0 ? 5.00 : 0;
+  const total = cartTotal + shippingFee;
 
   const handleDemoOrder = () => {
+    if (cartItems.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Your cart is empty!",
+        description: "Please add items to your cart before placing an order.",
+      });
+      return;
+    }
     toast({
         title: "Demo Order Placed!",
         description: "Your demo order has been successfully placed.",
     });
+    clearCart();
     router.push('/orders');
   }
 
@@ -40,7 +42,8 @@ export default function CartPage() {
       <h1 className="text-3xl md:text-4xl font-headline mb-8">Your Cart</h1>
       <div className="grid md:grid-cols-[1fr_400px] gap-8 items-start">
         <div className="grid gap-6">
-          {cartItems.map((item) => (
+          {cartItems.length > 0 ? (
+            cartItems.map((item) => (
             <Card key={item.id}>
               <CardContent className="p-4 flex items-start gap-4">
                 <Image
@@ -56,23 +59,33 @@ export default function CartPage() {
                   <p className="text-sm text-muted-foreground">{item.category}</p>
                   <div className="flex items-center gap-4 mt-2">
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
                         <Minus className="h-4 w-4" />
                       </Button>
                       <span className="font-semibold w-4 text-center">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                     <p className="font-semibold text-lg ml-auto">${(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id)}>
                   <Trash2 className="h-5 w-5 text-muted-foreground" />
                 </Button>
               </CardContent>
             </Card>
-          ))}
+            ))
+          ) : (
+            <Card className="flex flex-col items-center justify-center py-16">
+              <ShoppingCart className="h-16 w-16 text-muted-foreground mb-4"/>
+              <h3 className="text-xl font-headline mb-2">Your Cart is Empty</h3>
+              <p className="text-muted-foreground mb-4">Looks like you haven't added anything to your cart yet.</p>
+              <Button asChild>
+                <Link href="/marketplace">Start Shopping</Link>
+              </Button>
+            </Card>
+          )}
         </div>
         <div className="grid gap-6">
             <Card>
@@ -82,7 +95,7 @@ export default function CartPage() {
                 <CardContent className="grid gap-4">
                     <div className="flex items-center justify-between">
                         <p>Subtotal</p>
-                        <p className="font-medium">${subtotal.toFixed(2)}</p>
+                        <p className="font-medium">${cartTotal.toFixed(2)}</p>
                     </div>
                     <div className="flex items-center justify-between">
                         <p>Shipping</p>
@@ -95,7 +108,7 @@ export default function CartPage() {
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2">
-                    <Button size="lg" className="w-full">Proceed to Checkout</Button>
+                    <Button size="lg" className="w-full" disabled={cartItems.length === 0}>Proceed to Checkout</Button>
                     <Button size="lg" variant="secondary" className="w-full" onClick={handleDemoOrder}>Place Demo Order</Button>
                 </CardFooter>
             </Card>
