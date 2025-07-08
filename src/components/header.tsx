@@ -1,18 +1,13 @@
 
-"use client";
-
 import Link from "next/link";
-import { Search, ShoppingCart } from "lucide-react";
+import { Search } from "lucide-react";
 import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Icons } from "./icons";
 import { MainNav } from "./main-nav";
-import { UserNav } from "./user-nav";
-import { Badge } from "./ui/badge";
-import { useCart } from "@/context/cart-context";
 import { HeaderSearch } from "./header-search";
+import { HeaderActions } from "./header-actions";
 
 function SearchInputFallback() {
     return (
@@ -31,7 +26,6 @@ function SearchInputFallback() {
 }
 
 export function Header() {
-  const { cartCount } = useCart();
 
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
@@ -46,16 +40,7 @@ export function Header() {
         <Suspense fallback={<SearchInputFallback />}>
           <HeaderSearch />
         </Suspense>
-        <Button variant="ghost" size="icon" className="relative" asChild>
-            <Link href="/cart">
-                <ShoppingCart className="h-5 w-5" />
-                {cartCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-1 text-xs" variant="destructive">{cartCount}</Badge>
-                )}
-                <span className="sr-only">Shopping Cart</span>
-            </Link>
-        </Button>
-        <UserNav />
+        <HeaderActions />
       </div>
     </header>
   );
