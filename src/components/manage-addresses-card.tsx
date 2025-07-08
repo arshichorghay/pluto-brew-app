@@ -159,13 +159,12 @@ export function ManageAddressesCard() {
                         <DialogTitle>{addressToEdit ? 'Edit' : 'Add'} Address</DialogTitle>
                     </DialogHeader>
                     <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
-                       {isFormOpen && (
-                            <AddressForm 
-                                onSave={handleFormSave} 
-                                onCancel={() => setIsFormOpen(false)}
-                                initialData={addressToEdit}
-                            />
-                       )}
+                        <AddressForm 
+                            onSave={handleFormSave} 
+                            onCancel={() => setIsFormOpen(false)}
+                            initialData={addressToEdit}
+                            isOpen={isFormOpen}
+                        />
                     </APIProvider>
                 </DialogContent>
             </Dialog>
@@ -193,9 +192,10 @@ interface AddressFormProps {
     onSave: (data: Omit<SavedAddress, 'id'>) => void;
     onCancel: () => void;
     initialData?: SavedAddress | null;
+    isOpen: boolean;
 }
 
-function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
+function AddressForm({ onSave, onCancel, initialData, isOpen }: AddressFormProps) {
     const [alias, setAlias] = useState(initialData?.alias || '');
     const [address, setAddress] = useState(initialData?.address || '');
     const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData ? {lat: initialData.lat, lng: initialData.lng} : null);
@@ -249,7 +249,7 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
             const pacContainers = document.querySelectorAll('.pac-container');
             pacContainers.forEach(container => container.remove());
         };
-    }, [placesLib, toast, updateLocationState]);
+    }, [placesLib, toast, updateLocationState, isOpen]);
 
     const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (!geocodingLib || !e.latLng) return;
