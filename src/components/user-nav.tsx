@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,14 +16,19 @@ import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { User, Shield } from "lucide-react";
+import { Skeleton } from "./ui/skeleton";
 
 export function UserNav() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
     logout();
     router.push('/');
+  }
+
+  if (isLoading) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
   }
 
   if (!user) {

@@ -7,6 +7,7 @@ import { addUser, findUserByCredentials } from "@/lib/storage";
 
 interface AuthContextType {
   user: User | null;
+  isLoading: boolean;
   login: (email: string, password?: string) => Promise<User | null>;
   logout: () => void;
   register: (name: string, email: string, password?: string) => Promise<User | null>;
@@ -16,11 +17,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem("pluto-brew-user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    // This effect runs only on the client, after the initial render.
+    try {
+        const storedUser = localStorage.getItem("pluto-brew-user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        setUser(null);
+    } finally {
+        setIsLoading(false);
     }
   }, []);
 
@@ -28,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const foundUser = await findUserByCredentials(email, password);
     if (foundUser) {
       setUser(foundUser);
-      sessionStorage.setItem("pluto-brew-user", JSON.stringify(foundUser));
+      localStorage.setItem("pluto-brew-user", JSON.stringify(foundUser));
       return foundUser;
     }
     return null;
@@ -36,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem("pluto-brew-user");
+    localStorage.removeItem("pluto-brew-user");
   };
 
   const register = async (name: string, email: string, password?: string): Promise<User | null> => {
@@ -50,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
         const registeredUser = await addUser(newUser);
         setUser(registeredUser);
-        sessionStorage.setItem("pluto-brew-user", JSON.stringify(registeredUser));
+        localStorage.setItem("pluto-brew-user", JSON.stringify(registeredUser));
         return registeredUser;
     } catch (error) {
         console.error("Registration failed:", error);
@@ -59,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
