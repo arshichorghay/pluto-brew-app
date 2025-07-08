@@ -39,8 +39,14 @@ This application is pre-configured for deployment with **Firebase App Hosting**.
 
 This is a responsive web application, not a native mobile app. It is designed to be accessed through a web browser on any device, including mobile phones.
 
-- **No APK/App Store:** You do not need to create an `.apk` or go through the app store submission process.
-- **Browser Access:** Users can simply navigate to your public website URL on their phone's browser. The user interface will adapt to the smaller screen size.
+- **Browser Access:** The primary way for mobile users to access the app is by navigating to your public website URL on their phone's browser. The user interface will adapt to the smaller screen size.
+
+### Creating a Native-Like Mobile App (APK)
+
+If you need to distribute your app as a native `.apk` file for Android, you can do so by "wrapping" this web application.
+
+- **Wrapper Technology:** You would use a tool like [Capacitor](https://capacitorjs.com/). Capacitor takes your existing web app and bundles it inside a native mobile application shell. This allows you to submit it to app stores or distribute the APK directly.
+- **Real-time Updates Will Work:** The wrapped app is still your web app. It connects to the exact same Firebase backend. This means that any data changes (like an order status update) will be pushed in real-time to all connected clients—whether they are using the website on a desktop, a mobile browser, or the wrapped native app. The experience is seamless across all platforms.
 
 ## Raspberry Pi Integration
 
