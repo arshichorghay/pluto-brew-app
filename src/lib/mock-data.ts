@@ -18,10 +18,10 @@ export let mockUsers: User[] = [
 ];
 
 export let mockOrders: Order[] = [
-    { id: 'PB-1001', userId: '2', items: [{...mockProducts[0], quantity: 2}, {...mockProducts[2], quantity: 1}], total: 14.48, status: 'Delivered', orderDate: '2023-10-26', deliveryAddress: '123 Main St, Anytown USA' },
-    { id: 'PB-1002', userId: '3', items: [{...mockProducts[4], quantity: 4}], total: 27.96, status: 'Shipped', orderDate: '2023-10-28', deliveryAddress: '456 Oak Ave, Anytown USA' },
-    { id: 'PB-1003', userId: '2', items: [{...mockProducts[1], quantity: 1}, {...mockProducts[3], quantity: 2}], total: 15.99, status: 'Processing', orderDate: '2023-11-01', deliveryAddress: '123 Main St, Anytown USA' },
-    { id: 'PB-1004', userId: '3', items: [{...mockProducts[6], quantity: 2}], total: 12.00, status: 'Pending', orderDate: '2023-11-02', deliveryAddress: '456 Oak Ave, Anytown USA' },
+    { id: 'PB-1001', userId: '2', items: [{...mockProducts[0], quantity: 2}, {...mockProducts[2], quantity: 1}], total: 14.48, status: 'Delivered', orderDate: '2023-10-26', deliveryAddress: '123 Main St, Anytown USA', sourceStoreId: '1' },
+    { id: 'PB-1002', userId: '3', items: [{...mockProducts[4], quantity: 4}], total: 27.96, status: 'Shipped', orderDate: '2023-10-28', deliveryAddress: '456 Oak Ave, Anytown USA', sourceStoreId: '2' },
+    { id: 'PB-1003', userId: '2', items: [{...mockProducts[1], quantity: 1}, {...mockProducts[3], quantity: 2}], total: 15.99, status: 'Processing', orderDate: '2023-11-01', deliveryAddress: '123 Main St, Anytown USA', sourceStoreId: '1' },
+    { id: 'PB-1004', userId: '3', items: [{...mockProducts[6], quantity: 2}], total: 12.00, status: 'Pending', orderDate: '2023-11-02', deliveryAddress: '456 Oak Ave, Anytown USA', sourceStoreId: '3' },
 ];
 
 export const mockLocations: Location[] = [
@@ -30,4 +30,5 @@ export const mockLocations: Location[] = [
     { id: '3', name: 'Pluto Brew - Oststadt', lat: 49.010, lng: 8.425 },
     { id: '4', name: 'Pluto Brew - Südstadt', lat: 49.000, lng: 8.404 },
     { id: '5', name: 'Pluto Brew - Durlach', lat: 48.998, lng: 8.473 },
+    { id: '6', name: 'Pluto Brew - KIT Campus', lat: 49.00937, lng: 8.41656 },
 ]

@@ -9,7 +9,7 @@ export interface User {
 
 export interface Product {
   id: string;
-  name: string;
+  name:string;
   description: string;
   price: number;
   imageUrl: string;
@@ -32,6 +32,7 @@ export interface Order {
   status: OrderStatus;
   orderDate: string;
   deliveryAddress: string;
+  sourceStoreId?: string;
 }
 
 export interface Location {
@@ -44,4 +45,5 @@ export interface Location {
 export interface LocationInfo {
   type: 'pickup' | 'delivery';
   address: string;
+  location: Location;
 }

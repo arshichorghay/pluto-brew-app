@@ -60,6 +60,7 @@ export default function CartPage() {
         status: 'Pending',
         orderDate: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
         deliveryAddress: locationInfo.address,
+        sourceStoreId: locationInfo.location.id,
     };
 
     mockOrders.push(newOrder);
@@ -95,6 +96,7 @@ export default function CartPage() {
         status: 'Processing',
         orderDate: new Date().toLocaleDateString('en-CA'),
         deliveryAddress: '123 Demo Street, Suite 42, Faketopia',
+        sourceStoreId: '1',
     };
 
     mockOrders.push(demoOrder);

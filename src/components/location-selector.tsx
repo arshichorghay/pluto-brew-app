@@ -32,6 +32,8 @@ interface MapControlProps {
 function MapControl({ onLocationChange }: MapControlProps) {
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<LocationType>(mockLocations[0]);
+  const [deliverySource, setDeliverySource] = useState<LocationType>(mockLocations[0]);
+  
   const [deliveryPin, setDeliveryPin] = useState<{lat: number; lng: number} | null>(null);
   const [address, setAddress] = useState("");
   const [latInput, setLatInput] = useState("");
@@ -45,21 +47,17 @@ function MapControl({ onLocationChange }: MapControlProps) {
 
   useEffect(() => {
     if (deliveryType === 'pickup') {
-      onLocationChange({ type: 'pickup', address: selectedPickupLocation.name });
+      onLocationChange({ type: 'pickup', address: selectedPickupLocation.name, location: selectedPickupLocation });
       setMapCenter({ lat: selectedPickupLocation.lat, lng: selectedPickupLocation.lng });
     } else {
-      if (address) {
-        onLocationChange({ type: 'delivery', address: address });
+      if (address && deliverySource) {
+        onLocationChange({ type: 'delivery', address, location: deliverySource });
         if (deliveryPin) setMapCenter(deliveryPin);
-      } else if (deliveryPin) {
-        const addr = `Lat: ${deliveryPin.lat.toFixed(6)}, Lng: ${deliveryPin.lng.toFixed(6)}`;
-        onLocationChange({ type: 'delivery', address: addr });
-        setMapCenter(deliveryPin);
       } else {
         onLocationChange(null);
       }
     }
-  }, [deliveryType, selectedPickupLocation, address, deliveryPin, onLocationChange]);
+  }, [deliveryType, selectedPickupLocation, address, deliveryPin, deliverySource, onLocationChange]);
 
 
   useEffect(() => {
@@ -67,7 +65,8 @@ function MapControl({ onLocationChange }: MapControlProps) {
 
     const autocompleteService = new placesLib.Autocomplete(addressInputRef.current, {
         fields: ["geometry", "name", "formatted_address"],
-        types: ["address"]
+        types: ["address"],
+        componentRestrictions: { country: "de" }, // Restrict to Germany for better results
     });
     setAutocomplete(autocompleteService);
   }, [placesLib]);
@@ -93,7 +92,10 @@ function MapControl({ onLocationChange }: MapControlProps) {
     });
 
     return () => {
-        google.maps.event.removeListener(listener);
+        // Correctly remove the listener on cleanup
+        if (google && google.maps && google.maps.event) {
+          google.maps.event.clearInstanceListeners(autocomplete);
+        }
     };
   }, [autocomplete, toast]);
 
@@ -167,6 +169,30 @@ function MapControl({ onLocationChange }: MapControlProps) {
                 </SelectContent>
                 </Select>
             </div>
+        )}
+
+        {deliveryType === 'delivery' && (
+          <div className="grid gap-2">
+            <Label className="text-sm font-medium">Deliver from store</Label>
+            <Select
+              defaultValue={deliverySource.id}
+              onValueChange={(id) => {
+                const location = mockLocations.find((l) => l.id === id);
+                if (location) setDeliverySource(location);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a source store" />
+              </SelectTrigger>
+              <SelectContent>
+                {mockLocations.map((location) => (
+                  <SelectItem key={location.id} value={location.id}>
+                    {location.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
 
         <div className="h-[300px] w-full rounded-md overflow-hidden border">
