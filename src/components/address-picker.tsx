@@ -8,59 +8,20 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "./ui/button";
 
-const AutocompleteInput = ({ onPlaceSelect, initialAddress }: { onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void, initialAddress?: string }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const places = useMapsLibrary('places');
-
-    useEffect(() => {
-        if (!places || !inputRef.current) return;
-        
-        const kitCampusCenter = { lat: 49.00937, lng: 8.41656 };
-        const autocomplete = new places.Autocomplete(inputRef.current, {
-            fields: ["place_id", "name", "formatted_address", "geometry"],
-            locationBias: { center: kitCampusCenter, radius: 5000 },
-            strictBounds: false,
-        });
-
-        const listener = autocomplete.addListener('place_changed', () => {
-            onPlaceSelect(autocomplete.getPlace());
-        });
-
-        return () => {
-            listener.remove();
-            const pacContainers = document.querySelectorAll('.pac-container');
-            pacContainers.forEach(container => container.remove());
-        };
-    }, [places, onPlaceSelect]);
-    
-    useEffect(() => {
-        if (inputRef.current && initialAddress) {
-            inputRef.current.value = initialAddress;
-        }
-    }, [initialAddress])
-
-    return (
-        <Input 
-            id="address-search" 
-            ref={inputRef}
-            placeholder="Search for a place or address..."
-            defaultValue={initialAddress || ''}
-        />
-    );
-};
-
 interface AddressPickerProps {
     onLocationSelect: (location: { address: string; lat: number; lng: number } | null) => void;
     initialLocation?: { address: string; lat: number; lng: number };
 }
 
 export function AddressPicker({ onLocationSelect, initialLocation }: AddressPickerProps) {
+    const inputRef = useRef<HTMLInputElement>(null);
     const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialLocation || null);
     const [address, setAddress] = useState<string>(initialLocation?.address || "");
     const [latInput, setLatInput] = useState<string>(initialLocation?.lat.toString() || "");
     const [lngInput, setLngInput] = useState<string>(initialLocation?.lng.toString() || "");
     const [mapCenter, setMapCenter] = useState(initialLocation || { lat: 49.0069, lng: 8.4037 });
     
+    const placesLib = useMapsLibrary('places');
     const geocodingLib = useMapsLibrary('geocoding');
     const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
     const { toast } = useToast();
@@ -71,6 +32,47 @@ export function AddressPicker({ onLocationSelect, initialLocation }: AddressPick
         }
     }, [geocodingLib]);
 
+    // This useEffect handles initializing the Autocomplete instance.
+    // It's based on the user's working code example to ensure stability.
+    useEffect(() => {
+        if (!placesLib || !inputRef.current) return;
+        
+        const kitCampusCenter = { lat: 49.00937, lng: 8.41656 };
+        const autocomplete = new placesLib.Autocomplete(inputRef.current, {
+            fields: ["place_id", "name", "formatted_address", "geometry"],
+            locationBias: { center: kitCampusCenter, radius: 5000 },
+            strictBounds: false,
+        });
+
+        const listener = autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place?.geometry?.location && place.formatted_address) {
+                const newPin = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                };
+                updateLocationState(newPin, place.formatted_address);
+                toast({ title: 'Location Found', description: `Pin set for ${place.formatted_address}` });
+            }
+        });
+
+        // This is the CRITICAL fix. It cleans up listeners to prevent conflicts.
+        return () => {
+            listener.remove();
+            if (inputRef.current) {
+                google.maps.event.clearInstanceListeners(inputRef.current);
+            }
+            const pacContainers = document.querySelectorAll('.pac-container');
+            pacContainers.forEach(container => container.remove());
+        };
+    }, [placesLib, toast, updateLocationState]);
+    
+    useEffect(() => {
+        if (inputRef.current && initialLocation?.address) {
+            inputRef.current.value = initialLocation.address;
+        }
+    }, [initialLocation]);
+
     useEffect(() => {
         if(pin && address) {
             onLocationSelect({ address, lat: pin.lat, lng: pin.lng });
@@ -78,24 +80,17 @@ export function AddressPicker({ onLocationSelect, initialLocation }: AddressPick
             onLocationSelect(null);
         }
     }, [pin, address, onLocationSelect]);
-
-    const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult | null) => {
-        if (place?.geometry?.location) {
-            const newPin = {
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng(),
-            };
-            const newAddress = place.formatted_address || place.name || '';
-            
-            setPin(newPin);
-            setMapCenter(newPin);
-            setAddress(newAddress);
-            setLatInput(newPin.lat.toString());
-            setLngInput(newPin.lng.toString());
-            
-            toast({ title: 'Location Found', description: `Pin set for ${newAddress}` });
+    
+    const updateLocationState = useCallback((newPin: { lat: number; lng: number }, newAddress: string) => {
+        setPin(newPin);
+        setMapCenter(newPin);
+        setAddress(newAddress);
+        setLatInput(newPin.lat.toString());
+        setLngInput(newPin.lng.toString());
+        if (inputRef.current) {
+            inputRef.current.value = newAddress;
         }
-    }, [toast]);
+    }, []);
 
     const handleCoordinateSet = () => {
         const lat = parseFloat(latInput);
@@ -105,38 +100,31 @@ export function AddressPicker({ onLocationSelect, initialLocation }: AddressPick
             return;
         }
         const newPin = { lat, lng };
-        setPin(newPin);
-        setMapCenter(newPin);
-        
         if (geocoder) {
             geocoder.geocode({ location: newPin }, (results, status) => {
                  if (status === 'OK' && results?.[0]) {
-                    setAddress(results[0].formatted_address);
+                    updateLocationState(newPin, results[0].formatted_address);
                  } else {
                     const newAddressStr = `Lat: ${lat}, Lng: ${lng}`;
-                    setAddress(newAddressStr);
+                    updateLocationState(newPin, newAddressStr);
                  }
+                 toast({ title: 'Location Set', description: `Pin set to Lat: ${lat}, Lng: ${lng}` });
             });
         }
-        toast({ title: 'Location Set', description: `Pin set to Lat: ${lat}, Lng: ${lng}` });
     };
 
     const handleMapClick = (e: google.maps.MapMouseEvent) => {
         if (!e.latLng || !geocoder) return;
         
         const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        setPin(newPin);
-        setLatInput(newPin.lat.toFixed(6));
-        setLngInput(newPin.lng.toFixed(6));
         
         geocoder.geocode({ location: e.latLng }, (results, status) => {
             if (status === 'OK' && results?.[0]) {
-                const newAddress = results[0].formatted_address;
-                setAddress(newAddress);
+                updateLocationState(newPin, results[0].formatted_address);
                 toast({ title: "Location Set", description: `Delivery address updated.` });
             } else {
                 const newAddressStr = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
-                setAddress(newAddressStr);
+                updateLocationState(newPin, newAddressStr);
                 toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
             }
         });
@@ -159,7 +147,12 @@ export function AddressPicker({ onLocationSelect, initialLocation }: AddressPick
             
             <div className="grid gap-2">
                 <Label htmlFor="address-search">Search for delivery address</Label>
-                <AutocompleteInput onPlaceSelect={handlePlaceSelect} initialAddress={address} />
+                <Input 
+                    id="address-search" 
+                    ref={inputRef}
+                    placeholder="Search for a place or address..."
+                    defaultValue={initialLocation?.address || ''}
+                />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
