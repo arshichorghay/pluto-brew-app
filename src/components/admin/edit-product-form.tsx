@@ -26,15 +26,15 @@ const productFormSchema = z.object({
   stock: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   category: z.string().min(1, 'Category is required.'),
   newImage: z
-    .instanceof(File, { message: 'Image is required.' })
+    .any()
     .optional()
     .nullable()
     .refine(
-      (file) => !file || file.size <= MAX_FILE_SIZE,
+      (file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE),
       `Max file size is 5MB.`
     )
     .refine(
-      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type),
+      (file) => !file || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)),
       'Only .jpg, .jpeg, .png and .webp formats are supported.'
     ),
 });
@@ -79,7 +79,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
     if (!product) return;
 
     try {
-      const newImageFile = data.newImage || undefined;
+      const newImageFile = data.newImage instanceof File ? data.newImage : undefined;
       const productData: UpdateProduct = {
         name: data.name,
         description: data.description,
@@ -106,7 +106,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
   };
 
   const imageField = form.watch('newImage');
-  const previewUrl = imageField ? URL.createObjectURL(imageField) : (product?.imageUrl || 'https://placehold.co/100x100.png');
+  const previewUrl = imageField instanceof File ? URL.createObjectURL(imageField) : (product?.imageUrl || 'https://placehold.co/100x100.png');
 
 
   return (
@@ -174,14 +174,15 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             <FormField
               control={form.control}
               name="newImage"
-              render={({ field }) => (
+              render={({ field: { onChange, value, ...rest } }) => (
                 <FormItem>
                   <FormLabel>Upload New Image</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => field.onChange(e.target.files?.[0] || null)}
+                      onChange={(e) => onChange(e.target.files?.[0] || null)}
+                      {...rest}
                     />
                   </FormControl>
                   <FormDescription>
