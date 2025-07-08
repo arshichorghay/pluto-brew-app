@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,9 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockLocations } from "@/lib/mock-data";
+import { getLocations } from '@/lib/storage';
+import type { Location } from '@/lib/types';
 
 export default function AdminLocationsPage() {
+  const [locations, setLocations] = useState<Location[]>([]);
+
+  useEffect(() => {
+    setLocations(getLocations());
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -41,7 +52,7 @@ export default function AdminLocationsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockLocations.map((location) => (
+            {locations.map((location) => (
               <TableRow key={location.id}>
                 <TableCell className="font-medium">{location.name}</TableCell>
                 <TableCell>{location.lat}</TableCell>

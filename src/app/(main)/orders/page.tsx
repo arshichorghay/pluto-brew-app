@@ -10,7 +10,6 @@ import {
   TableRow,
   TableCaption,
 } from "@/components/ui/table";
-import { mockOrders } from "@/lib/mock-data";
 import { OrderStatusBadge } from "@/components/order-status-badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
@@ -18,6 +17,7 @@ import { useEffect, useState } from "react";
 import type { Order } from "@/lib/types";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
+import { getOrders } from "@/lib/storage";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -25,8 +25,10 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (user) {
-      const orders = mockOrders.filter(order => order.userId === user.id);
+      const orders = getOrders().filter(order => order.userId === user.id);
       setUserOrders(orders);
+    } else {
+      setUserOrders([]);
     }
   }, [user]);
 

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mockLocations } from "@/lib/mock-data";
+import { getLocations } from "@/lib/storage";
 import type { Location as LocationType, LocationInfo } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
@@ -31,14 +31,25 @@ interface MapControlProps {
 
 function MapControl({ onLocationChange }: MapControlProps) {
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
-  const [selectedPickupLocation, setSelectedPickupLocation] = useState<LocationType>(mockLocations[0]);
-  const [deliverySource, setDeliverySource] = useState<LocationType>(mockLocations[0]);
+  
+  const [allLocations, setAllLocations] = useState<LocationType[]>([]);
+  const [selectedPickupLocation, setSelectedPickupLocation] = useState<LocationType | null>(null);
+  const [deliverySource, setDeliverySource] = useState<LocationType | null>(null);
+  
+  useEffect(() => {
+    const locations = getLocations();
+    setAllLocations(locations);
+    if (locations.length > 0) {
+      setSelectedPickupLocation(locations[0]);
+      setDeliverySource(locations[0]);
+    }
+  }, []);
   
   const [deliveryPin, setDeliveryPin] = useState<{lat: number; lng: number} | null>(null);
   const [address, setAddress] = useState("");
   const [latInput, setLatInput] = useState("");
   const [lngInput, setLngInput] = useState("");
-  const [mapCenter, setMapCenter] = useState({ lat: selectedPickupLocation.lat, lng: selectedPickupLocation.lng });
+  const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 }); // Default to Karlsruhe
   
   const placesLib = useMapsLibrary('places');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
@@ -47,8 +58,12 @@ function MapControl({ onLocationChange }: MapControlProps) {
 
   useEffect(() => {
     if (deliveryType === 'pickup') {
-      onLocationChange({ type: 'pickup', address: selectedPickupLocation.name, location: selectedPickupLocation });
-      setMapCenter({ lat: selectedPickupLocation.lat, lng: selectedPickupLocation.lng });
+      if (selectedPickupLocation) {
+        onLocationChange({ type: 'pickup', address: selectedPickupLocation.name, location: selectedPickupLocation });
+        setMapCenter({ lat: selectedPickupLocation.lat, lng: selectedPickupLocation.lng });
+      } else {
+        onLocationChange(null);
+      }
     } else {
       if (address && deliverySource) {
         onLocationChange({ type: 'delivery', address, location: deliverySource });
@@ -66,10 +81,15 @@ function MapControl({ onLocationChange }: MapControlProps) {
     const autocompleteService = new placesLib.Autocomplete(addressInputRef.current, {
         fields: ["geometry", "name", "formatted_address"],
         types: ["address"],
-        componentRestrictions: { country: "de" }, // Restrict to Germany for better results
     });
     setAutocomplete(autocompleteService);
-  }, [placesLib, deliveryType]);
+
+    return () => {
+        if (autocomplete) {
+          google.maps.event.clearInstanceListeners(autocomplete);
+        }
+    }
+  }, [placesLib]);
 
 
   useEffect(() => {
@@ -157,9 +177,9 @@ function MapControl({ onLocationChange }: MapControlProps) {
             <div>
                 <Label className="text-sm font-medium">Pickup from store</Label>
                 <Select
-                defaultValue={selectedPickupLocation.id}
+                value={selectedPickupLocation?.id}
                 onValueChange={(id) => {
-                    const location = mockLocations.find((l) => l.id === id);
+                    const location = allLocations.find((l) => l.id === id);
                     if (location) setSelectedPickupLocation(location);
                 }}
                 >
@@ -167,7 +187,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
                     <SelectValue placeholder="Select a store" />
                 </SelectTrigger>
                 <SelectContent>
-                    {mockLocations.map((location) => (
+                    {allLocations.map((location) => (
                     <SelectItem key={location.id} value={location.id}>
                         {location.name}
                     </SelectItem>
@@ -181,9 +201,9 @@ function MapControl({ onLocationChange }: MapControlProps) {
           <div className="grid gap-2">
             <Label className="text-sm font-medium">Deliver from store</Label>
             <Select
-              defaultValue={deliverySource.id}
+              value={deliverySource?.id}
               onValueChange={(id) => {
-                const location = mockLocations.find((l) => l.id === id);
+                const location = allLocations.find((l) => l.id === id);
                 if (location) setDeliverySource(location);
               }}
             >
@@ -191,7 +211,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
                 <SelectValue placeholder="Select a source store" />
               </SelectTrigger>
               <SelectContent>
-                {mockLocations.map((location) => (
+                {allLocations.map((location) => (
                   <SelectItem key={location.id} value={location.id}>
                     {location.name}
                   </SelectItem>
@@ -210,7 +230,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
             onClick={handleMapClick}
             clickableIcons={false}
           >
-            {deliveryType === 'pickup' && mockLocations.map(loc => (
+            {deliveryType === 'pickup' && allLocations.map(loc => (
                  <AdvancedMarker
                     key={loc.id}
                     position={{ lat: loc.lat, lng: loc.lng }}
@@ -236,6 +256,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
                         id="address-search" 
                         ref={addressInputRef}
                         placeholder="Start typing your delivery address..."
+                        defaultValue={address}
                     />
                 </div>
 

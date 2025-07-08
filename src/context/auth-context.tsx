@@ -2,9 +2,9 @@
 "use client";
 
 import type { User } from "@/lib/types";
-import { mockUsers } from "@/lib/mock-data";
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { v4 as uuidv4 } from 'uuid';
+import { addUser, findUserByCredentials, getUsers } from "@/lib/storage";
 
 interface AuthContextType {
   user: User | null;
@@ -26,9 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password?: string): Promise<User | null> => {
-    const foundUser = mockUsers.find(
-      (u) => u.email === email && u.password === password
-    );
+    const foundUser = findUserByCredentials(email, password);
     if (foundUser) {
       setUser(foundUser);
       sessionStorage.setItem("pluto-brew-user", JSON.stringify(foundUser));
@@ -43,11 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (name: string, email: string, password?: string): Promise<User | null> => {
-    if (mockUsers.some(u => u.email === email)) {
-        // In a real app, you'd throw an error
+    const users = getUsers();
+    if (users.some(u => u.email === email)) {
         console.error("User already exists");
         return null;
     }
+
     const newUser: User = {
         id: uuidv4(),
         name,
@@ -55,10 +54,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         role: 'customer'
     };
-    mockUsers.push(newUser); // Note: This is in-memory, will reset on refresh
-    setUser(newUser);
-    sessionStorage.setItem("pluto-brew-user", JSON.stringify(newUser));
-    return newUser;
+
+    try {
+        addUser(newUser);
+        setUser(newUser);
+        sessionStorage.setItem("pluto-brew-user", JSON.stringify(newUser));
+        return newUser;
+    } catch (error) {
+        console.error("Registration failed:", error);
+        return null;
+    }
   }
 
   return (

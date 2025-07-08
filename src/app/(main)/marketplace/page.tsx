@@ -1,5 +1,6 @@
+
 import { ProductCard } from "@/components/product-card";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts } from "@/lib/mock-data-defaults";
 
 export default function MarketplacePage() {
   return (

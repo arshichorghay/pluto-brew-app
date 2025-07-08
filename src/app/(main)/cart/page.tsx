@@ -14,7 +14,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { LocationInfo, Order } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
-import { mockOrders, mockProducts } from "@/lib/mock-data";
+import { mockProducts } from "@/lib/mock-data-defaults";
+import { addOrder } from "@/lib/storage";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
@@ -63,7 +64,7 @@ export default function CartPage() {
         sourceStoreId: locationInfo.location.id,
     };
 
-    mockOrders.push(newOrder);
+    addOrder(newOrder);
 
     toast({
         title: "Order Placed!",
@@ -99,7 +100,7 @@ export default function CartPage() {
         sourceStoreId: '1',
     };
 
-    mockOrders.push(demoOrder);
+    addOrder(demoOrder);
     toast({ title: "Demo Order Created!", description: `Order #${demoOrder.id} has been added to your orders.` });
     router.push('/orders');
   };

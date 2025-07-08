@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,10 +18,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockUsers } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
+import type { User } from "@/lib/types";
+import { getUsers } from "@/lib/storage";
 
 export default function AdminUsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    setUsers(getUsers());
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -42,7 +53,7 @@ export default function AdminUsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockUsers.map((user) => (
+            {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>

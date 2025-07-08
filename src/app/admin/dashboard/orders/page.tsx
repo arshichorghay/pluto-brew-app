@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,26 +25,28 @@ import {
     SelectTrigger,
     SelectValue,
   } from "@/components/ui/select"  
-import { mockOrders, mockUsers } from "@/lib/mock-data";
 import { OrderStatusBadge } from "@/components/order-status-badge";
-import type { OrderStatus, Order } from "@/lib/types";
+import type { OrderStatus, Order, User } from "@/lib/types";
 import { useToast } from '@/hooks/use-toast';
+import { getOrders, getUsers, updateOrderStatus } from '@/lib/storage';
 
 const orderStatuses: OrderStatus[] = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
 
 export default function AdminOrdersPage() {
-    const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const { toast } = useToast();
 
-    const getUserName = (userId: string) => mockUsers.find(u => u.id === userId)?.name || 'Unknown User';
+    useEffect(() => {
+        setOrders(getOrders());
+        setUsers(getUsers());
+    }, []);
+
+    const getUserName = (userId: string) => users.find(u => u.id === userId)?.name || 'Unknown User';
 
     const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-        // This is a mock update. In a real app, this would be an API call.
-        const orderIndex = mockOrders.findIndex(o => o.id === orderId);
-        if (orderIndex !== -1) {
-            mockOrders[orderIndex].status = newStatus;
-        }
-        setOrders([...mockOrders]);
+        updateOrderStatus(orderId, newStatus);
+        setOrders(getOrders()); // Re-fetch orders to update state
         toast({
             title: "Order Status Updated",
             description: `Order ${orderId} is now ${newStatus}.`

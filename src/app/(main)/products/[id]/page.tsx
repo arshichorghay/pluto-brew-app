@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts } from "@/lib/mock-data-defaults";
 import { notFound } from "next/navigation";
 import { Minus, Plus, Star } from "lucide-react";
 import { useState } from "react";

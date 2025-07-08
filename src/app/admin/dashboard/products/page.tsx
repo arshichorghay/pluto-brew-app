@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts } from "@/lib/mock-data-defaults";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
