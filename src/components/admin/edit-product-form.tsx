@@ -26,12 +26,16 @@ const productFormSchema = z.object({
   stock: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   category: z.string().min(1, 'Category is required.'),
   newImage: z
-    .any()
+    .instanceof(File, { message: 'Image is required.' })
     .optional()
-    .refine((files) => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .nullable()
     .refine(
-      (files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files[0].type),
-      '.jpg, .jpeg, .png, and .webp files are accepted.'
+      (file) => !file || file.size <= MAX_FILE_SIZE,
+      `Max file size is 5MB.`
+    )
+    .refine(
+      (file) => !file || ACCEPTED_IMAGE_TYPES.includes(file.type),
+      'Only .jpg, .jpeg, .png and .webp formats are supported.'
     ),
 });
 
@@ -54,7 +58,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
       price: 0,
       stock: 0,
       category: '',
-      newImage: undefined,
+      newImage: null,
     },
   });
 
@@ -66,7 +70,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
         price: product.price,
         stock: product.stock,
         category: product.category,
-        newImage: undefined,
+        newImage: null,
       });
     }
   }, [product, form]);
@@ -75,7 +79,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
     if (!product) return;
 
     try {
-      const newImageFile = data.newImage?.[0];
+      const newImageFile = data.newImage || undefined;
       const productData: UpdateProduct = {
         name: data.name,
         description: data.description,
@@ -100,6 +104,10 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
       });
     }
   };
+
+  const imageField = form.watch('newImage');
+  const previewUrl = imageField ? URL.createObjectURL(imageField) : (product?.imageUrl || 'https://placehold.co/100x100.png');
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -151,10 +159,10 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             )} />
 
             <div className="space-y-2">
-                <FormLabel>Current Image</FormLabel>
+                <FormLabel>Product Image</FormLabel>
                 <div className="mt-2">
                     <Image 
-                        src={product?.imageUrl || 'https://placehold.co/100x100.png'}
+                        src={previewUrl}
                         alt={product?.name || 'Product Image'}
                         width={100}
                         height={100}
@@ -173,7 +181,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => field.onChange(e.target.files)}
+                      onChange={(e) => field.onChange(e.target.files?.[0] || null)}
                     />
                   </FormControl>
                   <FormDescription>
