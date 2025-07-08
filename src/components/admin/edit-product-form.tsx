@@ -13,11 +13,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { updateProduct, uploadProductImage } from '@/lib/storage';
+import { updateProduct } from '@/lib/storage';
 import type { Product, UpdateProduct } from '@/lib/types';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 const productFormSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -25,7 +22,7 @@ const productFormSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   stock: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   category: z.string().min(1, 'Category is required.'),
-  newImage: z.any().optional(),
+  imageUrl: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -39,7 +36,6 @@ interface EditProductFormProps {
 
 export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate }: EditProductFormProps) {
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = React.useState(false);
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -49,7 +45,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
       price: 0,
       stock: 0,
       category: '',
-      newImage: null,
+      imageUrl: '',
     },
   });
 
@@ -61,15 +57,13 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
         price: product.price,
         stock: product.stock,
         category: product.category,
-        newImage: null,
+        imageUrl: product.imageUrl,
       });
     }
-  }, [product, form, isOpen]); // Reset form when dialog opens or product changes
+  }, [product, form, isOpen]);
 
   const onSubmit = async (data: ProductFormValues) => {
     if (!product) return;
-    setIsSaving(true);
-    console.log("Starting product update process...");
 
     try {
         const productUpdateData: UpdateProduct = {
@@ -78,38 +72,10 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             price: data.price,
             stock: data.stock,
             category: data.category,
-            imageUrl: product.imageUrl, // Start with the existing URL
+            imageUrl: data.imageUrl,
         };
 
-        const newImageFileList = data.newImage as FileList | undefined;
-
-        if (newImageFileList && newImageFileList.length > 0) {
-            const newImageFile = newImageFileList[0];
-            console.log("New image file detected. Validating...");
-            if (newImageFile.size > MAX_FILE_SIZE) {
-                throw new Error('Max file size is 5MB.');
-            }
-            if (!ACCEPTED_IMAGE_TYPES.includes(newImageFile.type)) {
-                throw new Error('Only .jpg, .jpeg, .png and .webp formats are supported.');
-            }
-            console.log("Validation passed. Starting upload...");
-            try {
-                const newImageUrl = await uploadProductImage(newImageFile);
-                console.log("Image uploaded successfully. URL:", newImageUrl);
-                productUpdateData.imageUrl = newImageUrl;
-            } catch (uploadError) {
-                console.error("!!! FAILED AT IMAGE UPLOAD !!!", uploadError);
-                toast({ variant: 'destructive', title: 'Image Upload Failed', description: 'Could not upload the new image. Check console for details.' });
-                setIsSaving(false);
-                return; // Stop execution
-            }
-        } else {
-            console.log("No new image file detected. Skipping upload.");
-        }
-
-        console.log("Updating product document in Firestore with data:", productUpdateData);
         await updateProduct(product.id, productUpdateData);
-        console.log("Product document updated successfully.");
 
         toast({
             title: 'Product Updated',
@@ -119,26 +85,18 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
         onOpenChange(false);
 
     } catch (error) {
-        console.error("!!! ERROR IN ONSUBMIT PROCESS !!!", error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         toast({
             variant: 'destructive',
             title: 'Error updating product',
             description: errorMessage,
         });
-    } finally {
-        console.log("Finishing update process, resetting button state.");
-        if (isSaving) {
-          setIsSaving(false);
-        }
     }
   };
   
-  const fileRef = form.register('newImage');
-  const imageField = form.watch('newImage') as FileList | undefined;
-  const previewUrl = imageField && imageField.length > 0 
-    ? URL.createObjectURL(imageField[0]) 
-    : (product?.imageUrl || 'https://placehold.co/100x100.png');
+  const imageUrl = form.watch('imageUrl');
+  const previewUrl = imageUrl || 'https://placehold.co/100x100.png';
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -190,7 +148,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             )} />
 
             <div className="space-y-2">
-                <FormLabel>Product Image</FormLabel>
+                <FormLabel>Product Image Preview</FormLabel>
                 <div className="mt-2">
                     <Image 
                         src={previewUrl}
@@ -198,30 +156,24 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
                         width={100}
                         height={100}
                         className="rounded-md object-cover border"
-                        unoptimized // This helps avoid issues with temporary blob URLs for previews
+                        unoptimized
                     />
                 </div>
             </div>
 
-            <FormItem>
-                <FormLabel>Upload New Image</FormLabel>
-                <FormControl>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      {...fileRef}
-                    />
-                </FormControl>
+            <FormField control={form.control} name="imageUrl" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Image URL</FormLabel>
+                <FormControl><Input placeholder="/products/my-beer.png" {...field} value={field.value || ''} /></FormControl>
                 <FormDescription>
-                    Leave blank to keep the current image. Max 5MB.
+                  Local path to an image in the `public` folder (e.g., /products/image.png)
                 </FormDescription>
                 <FormMessage />
-            </FormItem>
+              </FormItem>
+            )} />
 
             <DialogFooter>
-               <Button type="submit" disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save changes'}
-              </Button>
+               <Button type="submit">Save changes</Button>
             </DialogFooter>
           </form>
         </Form>

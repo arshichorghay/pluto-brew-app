@@ -1,4 +1,5 @@
 
+
 export interface User {
   id: string;
   name: string;
@@ -15,7 +16,7 @@ export interface Product {
   name:string;
   description: string;
   price: number;
-  imageUrl: string;
+  imageUrl?: string;
   stock: number;
   category: string;
   'data-ai-hint'?: string;

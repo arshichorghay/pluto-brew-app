@@ -1,14 +1,14 @@
 import type { Product, User, Order, Location } from './types';
 
 export const mockProducts: Product[] = [
-  { id: '1', name: 'Heineken', description: 'A classic pale lager with a mild, slightly bitter taste.', price: 4.99, imageUrl: 'https://placehold.co/600x400.png', stock: 150, category: 'Lager', 'data-ai-hint': 'heineken beer bottle' },
-  { id: '2', name: 'Guinness Draught', description: 'A legendary Irish dry stout, rich and creamy with a smooth finish.', price: 5.49, imageUrl: 'https://placehold.co/600x400.png', stock: 100, category: 'Stout', 'data-ai-hint': 'guinness beer glass' },
-  { id: '3', name: 'Corona Extra', description: 'A refreshing Mexican lager, perfect with a slice of lime.', price: 4.50, imageUrl: 'https://placehold.co/600x400.png', stock: 200, category: 'Lager', 'data-ai-hint': 'corona beer bottle' },
-  { id: '4', name: 'Stella Artois', description: 'A classic Belgian pilsner with a well-balanced, floral hop aroma.', price: 5.25, imageUrl: 'https://placehold.co/600x400.png', stock: 120, category: 'Pilsner', 'data-ai-hint': 'stella artois bottle' },
-  { id: '5', name: 'Blue Moon', description: 'A Belgian-style witbier, brewed with Valencia orange peel for a subtle sweetness.', price: 6.99, imageUrl: 'https://placehold.co/600x400.png', stock: 90, category: 'Witbier', 'data-ai-hint': 'blue moon beer glass' },
-  { id: '6', name: 'Lagunitas IPA', description: 'A well-rounded, highly drinkable IPA with a bit of caramel malt barley.', price: 6.50, imageUrl: 'https://placehold.co/600x400.png', stock: 80, category: 'IPA', 'data-ai-hint': 'lagunitas ipa bottle' },
-  { id: '7', name: 'Sierra Nevada Pale Ale', description: 'A delightful example of a classic American pale ale with pine and citrus notes.', price: 6.00, imageUrl: 'https://placehold.co/600x400.png', stock: 85, category: 'Pale Ale', 'data-ai-hint': 'sierra nevada can' },
-  { id: '8', name: 'Budweiser', description: 'An American-style pale lager, known for its crisp, clean taste.', price: 3.99, imageUrl: 'https://placehold.co/600x400.png', stock: 250, category: 'Lager', 'data-ai-hint': 'budweiser beer bottle' },
+  { id: '1', name: 'Heineken', description: 'A classic pale lager with a mild, slightly bitter taste.', price: 4.99, imageUrl: '/products/heineken.png', stock: 150, category: 'Lager', 'data-ai-hint': 'heineken beer bottle' },
+  { id: '2', name: 'Guinness Draught', description: 'A legendary Irish dry stout, rich and creamy with a smooth finish.', price: 5.49, imageUrl: '/products/guinness.png', stock: 100, category: 'Stout', 'data-ai-hint': 'guinness beer glass' },
+  { id: '3', name: 'Corona Extra', description: 'A refreshing Mexican lager, perfect with a slice of lime.', price: 4.50, imageUrl: '/products/corona.png', stock: 200, category: 'Lager', 'data-ai-hint': 'corona beer bottle' },
+  { id: '4', name: 'Stella Artois', description: 'A classic Belgian pilsner with a well-balanced, floral hop aroma.', price: 5.25, imageUrl: '/products/stella.png', stock: 120, category: 'Pilsner', 'data-ai-hint': 'stella artois bottle' },
+  { id: '5', name: 'Blue Moon', description: 'A Belgian-style witbier, brewed with Valencia orange peel for a subtle sweetness.', price: 6.99, imageUrl: '/products/bluemoon.png', stock: 90, category: 'Witbier', 'data-ai-hint': 'blue moon beer glass' },
+  { id: '6', name: 'Lagunitas IPA', description: 'A well-rounded, highly drinkable IPA with a bit of caramel malt barley.', price: 6.50, imageUrl: '/products/lagunitas.png', stock: 80, category: 'IPA', 'data-ai-hint': 'lagunitas ipa bottle' },
+  { id: '7', name: 'Sierra Nevada Pale Ale', description: 'A delightful example of a classic American pale ale with pine and citrus notes.', price: 6.00, imageUrl: '/products/sierrannevada.png', stock: 85, category: 'Pale Ale', 'data-ai-hint': 'sierra nevada can' },
+  { id: '8', name: 'Budweiser', description: 'An American-style pale lager, known for its crisp, clean taste.', price: 3.99, imageUrl: '/products/budweiser.png', stock: 250, category: 'Lager', 'data-ai-hint': 'budweiser beer bottle' },
 ];
 
 export const mockUsers: User[] = [

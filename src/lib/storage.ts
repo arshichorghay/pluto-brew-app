@@ -1,6 +1,5 @@
 
-import { db, storage } from './firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from './firebase';
 import {
   collection,
   getDocs,
@@ -112,13 +111,6 @@ export const getProducts = async (): Promise<Product[]> => {
     const productsCol = collection(db, PRODUCTS_COLLECTION);
     const productSnapshot = await getDocs(productsCol);
     return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
-};
-
-export const uploadProductImage = async (file: File): Promise<string> => {
-    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
 };
 
 export const updateProduct = async (productId: string, data: UpdateProduct): Promise<void> => {
