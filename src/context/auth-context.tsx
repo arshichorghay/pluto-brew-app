@@ -17,9 +17,9 @@ import { createUserRecord, getUserById } from "@/lib/storage";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password?: string) => Promise<User | null>;
+  login: (email: string, password?: string) => Promise<FirebaseUser>;
   logout: () => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<User | null>;
+  register: (name: string, email: string, password: string) => Promise<FirebaseUser>;
   refreshUser: () => Promise<void>;
 }
 
@@ -62,14 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password?: string): Promise<User | null> => {
+  const login = async (email: string, password?: string): Promise<FirebaseUser> => {
     if (!password) throw new Error("Password is required to log in.");
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const appUser = await getUserById(userCredential.user.uid);
-    return appUser; // onAuthStateChanged will set the state
+    // The onAuthStateChanged listener will handle setting the user state.
+    return userCredential.user;
   };
 
-  const register = async (name: string, email: string, password: string): Promise<User | null> => {
+  const register = async (name: string, email: string, password: string): Promise<FirebaseUser> => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
 
@@ -85,11 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     await createUserRecord(newUser);
 
-    return newUser; // onAuthStateChanged will set the state
+    // The onAuthStateChanged listener will handle setting the user state.
+    return firebaseUser;
   };
 
   const logout = async (): Promise<void> => {
     await signOut(auth);
+    // The onAuthStateChanged listener will handle setting the user state to null.
   };
   
   const refreshUser = useCallback(async () => {

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
+import { Terminal, Loader2 } from "lucide-react";
 
 export function AuthForm() {
   const [loginEmail, setLoginEmail] = useState("");
@@ -24,27 +24,32 @@ export function AuthForm() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, register } = useAuth();
+  const { user, login, register, isLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const user = await login(loginEmail, loginPassword);
-      if (user) {
-        toast({ title: "Login Successful", description: `Welcome back, ${user.name}!` });
+  useEffect(() => {
+    // This effect handles redirection after a user's state changes (e.g., after login).
+    if (!isLoading && user) {
+        // User is logged in, redirect them away from the auth page.
         if (user.role === 'admin') {
           router.push("/admin/dashboard");
         } else {
           router.push("/marketplace");
         }
-      } else {
-        // This case should ideally not be hit if login throws on failure
-        setError("Invalid email or password. Please try again.");
-      }
+    }
+  }, [user, isLoading, router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const loggedInUser = await login(loginEmail, loginPassword);
+      toast({ title: "Login Successful", description: `Welcome back, ${loggedInUser.displayName || 'friend'}!` });
+      // The useEffect hook will handle the redirection.
     } catch (err: any) {
        let message = "An unknown error occurred.";
        if (err.code) {
@@ -62,6 +67,7 @@ export function AuthForm() {
          }
        }
        setError(message);
+       setIsSubmitting(false);
     }
   };
 
@@ -72,12 +78,11 @@ export function AuthForm() {
       setError("Please fill in all fields.");
       return;
     }
+    setIsSubmitting(true);
     try {
-        const user = await register(regName, regEmail, regPassword);
-        if (user) {
-            toast({ title: "Registration Successful", description: `Welcome, ${user.name}!` });
-            router.push("/marketplace");
-        }
+        const registeredUser = await register(regName, regEmail, regPassword);
+        toast({ title: "Registration Successful", description: `Welcome, ${registeredUser.displayName}!` });
+        // The useEffect hook will handle the redirection.
     } catch (err: any) {
         let message = "An unknown error occurred during registration.";
         if (err.code) {
@@ -96,16 +101,27 @@ export function AuthForm() {
             }
         }
         setError(message);
+        setIsSubmitting(false);
     }
   };
+
+  // While loading the initial auth state or if the user is already logged in (and about to be redirected),
+  // we can show a simple loading state to prevent interaction with the form.
+  if (isLoading || user) {
+      return (
+          <div className="w-full min-h-screen flex items-center justify-center p-6 bg-muted">
+              <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
 
   return (
     <Card>
       <Tabs defaultValue="login" className="w-full">
         <CardHeader>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsTrigger value="login" disabled={isSubmitting}>Login</TabsTrigger>
+            <TabsTrigger value="register" disabled={isSubmitting}>Register</TabsTrigger>
           </TabsList>
         </CardHeader>
         <CardContent>
@@ -119,11 +135,11 @@ export function AuthForm() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                <Input id="email" type="email" placeholder="m@example.com" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} disabled={isSubmitting} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                <Input id="password" type="password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} disabled={isSubmitting}/>
               </div>
               {error && (
                 <Alert variant="destructive">
@@ -132,7 +148,10 @@ export function AuthForm() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full">Login</Button>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Logging in...' : 'Login'}
+                </Button>
             </form>
           </TabsContent>
           <TabsContent value="register" className="mt-0">
@@ -145,15 +164,15 @@ export function AuthForm() {
             <form onSubmit={handleRegister} className="space-y-4">
              <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" placeholder="Pluto Pilot" required value={regName} onChange={(e) => setRegName(e.target.value)} />
+              <Input id="name" placeholder="Pluto Pilot" required value={regName} onChange={(e) => setRegName(e.target.value)} disabled={isSubmitting}/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email-reg">Email</Label>
-              <Input id="email-reg" type="email" placeholder="m@example.com" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} />
+              <Input id="email-reg" type="email" placeholder="m@example.com" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} disabled={isSubmitting}/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password-reg">Password</Label>
-              <Input id="password-reg" type="password" required value={regPassword} onChange={(e) => setRegPassword(e.target.value)} />
+              <Input id="password-reg" type="password" required value={regPassword} onChange={(e) => setRegPassword(e.target.value)} disabled={isSubmitting}/>
             </div>
              {error && (
                 <Alert variant="destructive">
@@ -162,7 +181,10 @@ export function AuthForm() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-            <Button type="submit" className="w-full">Create Account</Button>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Creating account...' : 'Create Account'}
+            </Button>
             </form>
           </TabsContent>
         </CardContent>
