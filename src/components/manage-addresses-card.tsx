@@ -149,6 +149,7 @@ export function ManageAddressesCard() {
                 <DialogContent 
                     className="max-w-2xl"
                     onInteractOutside={(e) => {
+                        // This prevents the dialog from closing when clicking on Google Maps suggestions
                         const target = e.target as HTMLElement;
                         if (target.closest('.pac-container')) {
                             e.preventDefault();
@@ -194,42 +195,17 @@ interface AddressFormProps {
 }
 
 function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
-    const [alias, setAlias] = useState('');
-    const [address, setAddress] = useState('');
-    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
-    const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
-    const [latInput, setLatInput] = useState('');
-    const [lngInput, setLngInput] = useState('');
+    const [alias, setAlias] = useState(initialData?.alias || '');
+    const [address, setAddress] = useState(initialData?.address || '');
+    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData ? {lat: initialData.lat, lng: initialData.lng} : null);
+    const [mapCenter, setMapCenter] = useState(initialData ? { lat: initialData.lat, lng: initialData.lng } : { lat: 49.0069, lng: 8.4037 });
+    const [latInput, setLatInput] = useState(initialData?.lat.toString() || '');
+    const [lngInput, setLngInput] = useState(initialData?.lng.toString() || '');
 
     const placesLib = useMapsLibrary('places');
     const geocodingLib = useMapsLibrary('geocoding');
     const addressInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
-    
-    useEffect(() => {
-        if (initialData) {
-            setAlias(initialData.alias);
-            setAddress(initialData.address);
-            const initialPin = { lat: initialData.lat, lng: initialData.lng };
-            setPin(initialPin);
-            setMapCenter(initialPin);
-            setLatInput(initialData.lat.toString());
-            setLngInput(initialData.lng.toString());
-            if (addressInputRef.current) {
-                addressInputRef.current.value = initialData.address;
-            }
-        } else {
-             // Reset form for "Add New"
-             setAlias('');
-             setAddress('');
-             setPin(null);
-             setLatInput('');
-             setLngInput('');
-             if (addressInputRef.current) {
-                 addressInputRef.current.value = '';
-             }
-        }
-    }, [initialData]);
 
     const updateLocationState = useCallback((lat: number, lng: number, addr: string) => {
         setPin({ lat, lng });
@@ -241,7 +217,7 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
             addressInputRef.current.value = addr;
         }
     }, []);
-
+    
     useEffect(() => {
         if (!placesLib || !addressInputRef.current) return;
 
@@ -350,7 +326,7 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                             id="address-search-dialog" 
                             ref={addressInputRef}
                             placeholder="Start typing your delivery address..."
-                            defaultValue={address}
+                            defaultValue={initialData?.address}
                         />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
@@ -383,3 +359,5 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         </form>
     );
 }
+
+    
