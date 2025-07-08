@@ -31,12 +31,18 @@ This is the most important step to ensure your app can connect to Firebase and G
 
 1.  **Create a Firebase Project:** If you haven't already, go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
 
+    > **⚠️ IMPORTANT: Firebase Project ID Rules**
+    > When you create your project, Firebase assigns it a unique **Project ID**. This ID has strict rules:
+    > - It must be **all lowercase**.
+    > - It can only contain letters, numbers, and hyphens (`-`).
+    > The error `Invalid project id: Pluto_V1` happens because an ID contains uppercase letters, which is not allowed.
+
 2.  **Connect Your Local Project to Firebase:**
     -   **Log in:** Open your terminal and run this command. A browser window will open to complete the login.
         ```bash
         firebase login
         ```
-    -   **Set Your Project ID:** Open the `.firebaserc` file in your project. You will see a line with `"default": "pluto-brew-app"`. Replace `pluto-brew-app` with your actual **Firebase Project ID** (which you can find in your Firebase Project Settings).
+    -   **Set Your Project ID:** Open the `.firebaserc` file in your project. You will see a line with `"default": "pluto-brew-app"`. Replace `pluto-brew-app` with your actual **Firebase Project ID** (the all-lowercase one from your Firebase Project Settings).
 
 ---
 
