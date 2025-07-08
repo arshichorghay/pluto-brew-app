@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/context/auth-context";
 import { CartProvider } from "@/context/cart-context";
 import { Playfair_Display, PT_Sans } from 'next/font/google';
+import { SessionTimer } from "@/components/session-timer";
 
 export const metadata: Metadata = {
   title: "Pluto Brew",
@@ -40,6 +41,7 @@ export default function RootLayout({
         )} suppressHydrationWarning>
         <AuthProvider>
           <CartProvider>
+            <SessionTimer />
             {children}
             <Toaster />
           </CartProvider>
