@@ -81,8 +81,8 @@ export function SessionTimer() {
 
     return (
         <>
-            <div className="fixed top-0 left-0 w-full z-[100]">
-                <Progress value={progressPercentage} className="h-1 w-full rounded-none" />
+            <div className="fixed top-0 left-0 w-full z-[100] bg-red-500 h-2">
+                <Progress value={progressPercentage} className="h-full w-full rounded-none" />
             </div>
             <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
                 <AlertDialogContent>

@@ -16,7 +16,7 @@ export function MainNav({
   const routes = [
     { href: "/marketplace", label: "Marketplace", public: true },
     { href: "/orders", label: "My Orders", public: true },
-    { href: "/admin/dashboard", label: "Admin", public: false, roles: ['admin'] },
+    { href: "/admin/dashboard/orders", label: "Admin", public: false, roles: ['admin'] },
   ];
 
   return (
