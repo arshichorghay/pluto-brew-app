@@ -69,13 +69,13 @@ function MapControl({ onLocationChange }: MapControlProps) {
         componentRestrictions: { country: "de" }, // Restrict to Germany for better results
     });
     setAutocomplete(autocompleteService);
-  }, [placesLib]);
+  }, [placesLib, deliveryType]);
 
 
   useEffect(() => {
     if (!autocomplete) return;
 
-    const listener = autocomplete.addListener('place_changed', () => {
+    const placeChangedListener = autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         if (place.geometry?.location) {
             const newPin = {
@@ -87,15 +87,15 @@ function MapControl({ onLocationChange }: MapControlProps) {
             setAddress(formattedAddress);
             setLatInput(newPin.lat.toString());
             setLngInput(newPin.lng.toString());
+            if (addressInputRef.current) {
+                addressInputRef.current.value = formattedAddress;
+            }
             toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
         }
     });
 
     return () => {
-        // Correctly remove the listener on cleanup
-        if (google && google.maps && google.maps.event) {
-          google.maps.event.clearInstanceListeners(autocomplete);
-        }
+        placeChangedListener.remove();
     };
   }, [autocomplete, toast]);
 
@@ -109,7 +109,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
     const newPin = { lat, lng };
     setDeliveryPin(newPin);
     const newAddress = `Lat: ${lat}, Lng: ${lng}`;
-    setAddress(newAddress);
+    setAddress(newAddress); 
     if (addressInputRef.current) {
         addressInputRef.current.value = newAddress;
     }
