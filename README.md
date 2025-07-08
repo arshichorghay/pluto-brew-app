@@ -39,7 +39,7 @@ This project requires API keys to connect to Firebase and Google Maps.
 1.  Go to the [Firebase Console](https://console.firebase.google.com/).
 2.  Click **"Add project"** and give your project a name (e.g., `pluto-brew-app`).
 3.  Continue through the setup steps. You can disable Google Analytics for this project if you don't need it.
-4.  Once created, **upgrade your project to the "Blaze" (Pay-as-you-go) plan.** This is required to deploy server-side rendered apps like this Next.js project. You still benefit from a generous free tier.
+4.  Once created, **upgrade your project to the "Blaze" (Pay-as-you-go) plan.** This step is necessary to enable the underlying Cloud Functions that power a dynamic Next.js application. Firebase provides a generous free tier for these services, so you are unlikely to incur any costs for a small to medium-sized application. You can set budget alerts in your Google Cloud project to avoid any unexpected charges.
 
 ### Step 3: Connect Your Local Project to Firebase
 
