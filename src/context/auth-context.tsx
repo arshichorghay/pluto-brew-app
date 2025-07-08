@@ -2,7 +2,7 @@
 
 import type { User, NewUser } from "@/lib/types";
 import { createContext, useContext, useState, useEffect, type ReactNode, useRef, useCallback } from "react";
-import { addUser, findUserByCredentials } from "@/lib/storage";
+import { addUser, findUserByCredentials, getUserById } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -11,11 +11,13 @@ interface AuthContextType {
   login: (email: string, password?: string) => Promise<User | null>;
   logout: () => void;
   register: (name: string, email: string, password?: string) => Promise<User | null>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+const LOCAL_STORAGE_KEY = "pluto-brew-user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -29,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       inactivityTimerRef.current = null;
     }
     setUser(null);
-    localStorage.removeItem("pluto-brew-user");
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
   }, []);
 
   const resetInactivityTimer = useCallback(() => {
@@ -46,10 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, INACTIVITY_TIMEOUT);
   }, [logout, toast]);
 
+  // Effect to load user from localStorage on initial load
   useEffect(() => {
-    // This effect runs only on the client, after the initial render.
     try {
-        const storedUser = localStorage.getItem("pluto-brew-user");
+        const storedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
+  // Effect to handle user activity and inactivity timeout
   useEffect(() => {
     if (user) {
       const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll'];
@@ -81,12 +84,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user, resetInactivityTimer]);
 
+  // Effect to sync logout across tabs
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === LOCAL_STORAGE_KEY && !event.newValue) {
+        // User was logged out or data cleared in another tab
+        logout();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [logout]);
+
+
   const login = async (email: string, password?: string): Promise<User | null> => {
     const foundUser = await findUserByCredentials(email, password);
     if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem("pluto-brew-user", JSON.stringify(foundUser));
-      return foundUser;
+      const { password: _, ...userToStore } = foundUser;
+      setUser(userToStore as User);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
+      return userToStore as User;
     }
     return null;
   };
@@ -101,17 +120,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
         const registeredUser = await addUser(newUser);
-        setUser(registeredUser);
-        localStorage.setItem("pluto-brew-user", JSON.stringify(registeredUser));
-        return registeredUser;
+        const { password: _, ...userToStore } = registeredUser;
+        setUser(userToStore as User);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
+        return userToStore as User;
     } catch (error) {
         console.error("Registration failed:", error);
         return null;
     }
   }
 
+  const refreshUser = useCallback(async () => {
+    if (user?.id) {
+        const freshUser = await getUserById(user.id);
+        if (freshUser) {
+            const { password: _, ...userToStore } = freshUser;
+            setUser(userToStore as User);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
+        } else {
+            logout();
+        }
+    }
+  }, [user, logout]);
+
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, register, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -36,7 +36,7 @@ const AddressIcon = ({ alias }: { alias: string }) => {
 }
 
 export function AddressManager() {
-    const { user, login } = useAuth();
+    const { user, refreshUser } = useAuth();
     const { toast } = useToast();
     
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -61,7 +61,7 @@ export function AddressManager() {
         
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            await login(user.email, user.password);
+            await refreshUser();
             toast({ title: "Address Deleted", description: `The address "${addressToDelete.alias}" was removed.` });
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Failed to delete address." });
@@ -87,7 +87,7 @@ export function AddressManager() {
 
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            await login(user.email, user.password);
+            await refreshUser();
             toast({ title: "Address Saved", description: "Your address list has been updated." });
             setAddressToEdit(null);
         } catch (error) {

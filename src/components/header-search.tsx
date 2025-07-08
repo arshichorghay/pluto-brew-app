@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -6,7 +5,11 @@ import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
-export function HeaderSearch() {
+/**
+ * The actual search bar implementation that uses client-side hooks.
+ * This should only be rendered on the client.
+ */
+function SearchBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -38,5 +41,33 @@ export function HeaderSearch() {
         />
       </div>
     </form>
+  )
+}
+
+/**
+ * This component safely renders the SearchBar only on the client-side
+ * to prevent build errors with `useSearchParams` in a static export.
+ */
+export function HeaderSearch() {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  return (
+    <div className="ml-auto flex-1 sm:flex-initial">
+        {isClient ? <SearchBar /> : (
+            <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Search products..."
+                    className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
+                    disabled
+                />
+            </div>
+        )}
+    </div>
   )
 }
