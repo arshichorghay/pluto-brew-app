@@ -149,7 +149,6 @@ export function ManageAddressesCard() {
                 <DialogContent 
                     className="max-w-2xl"
                     onInteractOutside={(e) => {
-                        // This prevents the dialog from closing when clicking on Google Maps suggestions
                         const target = e.target as HTMLElement;
                         if (target.closest('.pac-container')) {
                             e.preventDefault();
@@ -240,13 +239,13 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
             if (listener) {
                 google.maps.event.removeListener(listener);
             }
-            if (addressInputRef.current) {
+            if (addressInputRef.current && typeof google !== 'undefined') {
                 google.maps.event.clearInstanceListeners(addressInputRef.current);
             }
             const pacContainers = document.querySelectorAll('.pac-container');
             pacContainers.forEach(container => container.remove());
         };
-    }, [placesLib, toast, updateLocationState]);
+    }, [placesLib, toast, updateLocationState, initialData]);
 
     const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (!geocodingLib || !e.latLng) return;
@@ -359,5 +358,3 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         </form>
     );
 }
-
-    
