@@ -45,7 +45,7 @@ export function ProductDetailView({ product }: { product: Product }) {
               </div>
               <p className="text-sm text-muted-foreground">(34 reviews)</p>
             </div>
-            <p className="text-2xl font-semibold">${product.price.toFixed(2)}</p>
+            <p className="text-2xl font-semibold">€{product.price.toFixed(2)}</p>
           </div>
           
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>

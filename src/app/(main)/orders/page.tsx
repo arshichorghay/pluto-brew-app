@@ -86,7 +86,7 @@ export default function OrdersPage() {
                     <OrderStatusBadge status={order.status} />
                     </TableCell>
                     <TableCell className="text-right">
-                    ${order.total.toFixed(2)}
+                    €{order.total.toFixed(2)}
                     </TableCell>
                     <TableCell>
                         <Button variant="outline" size="sm">View</Button>

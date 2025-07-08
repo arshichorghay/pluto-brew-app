@@ -27,10 +27,13 @@ export default function ProfilePage() {
         <h1 className="text-3xl md:text-4xl font-headline mb-8">Your Profile</h1>
         <Card className="max-w-md mx-auto">
             <CardHeader className="items-center text-center">
-                <Avatar className="h-24 w-24 mb-4">
-                    <AvatarImage src="https://placehold.co/96x96.png" alt={user.name} data-ai-hint="user avatar" />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <div className="relative group mb-4">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-full blur-sm opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                    <Avatar className="h-24 w-24 relative ring-4 ring-background">
+                        <AvatarImage src="https://placehold.co/96x96.png" alt={user.name} data-ai-hint="user avatar" />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </div>
                 <CardTitle className="font-headline text-3xl">{user.name}</CardTitle>
                 <CardDescription>{user.email}</CardDescription>
             </CardHeader>

@@ -45,7 +45,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <CardDescription className="text-sm text-center flex-grow">{product.description}</CardDescription>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
-        <div className="text-lg font-semibold">${product.price.toFixed(2)}</div>
+        <div className="text-lg font-semibold">€{product.price.toFixed(2)}</div>
         <Button size="sm" onClick={() => addToCart(product)}>
           <Plus className="mr-2 h-4 w-4" /> Add to Cart
         </Button>

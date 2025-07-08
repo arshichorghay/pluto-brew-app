@@ -103,7 +103,7 @@ export default function AdminOrdersPage() {
                     <TableCell className="font-medium">{order.id}</TableCell>
                     <TableCell>{getUserName(order.userId)}</TableCell>
                     <TableCell>{order.orderDate}</TableCell>
-                    <TableCell>${order.total.toFixed(2)}</TableCell>
+                    <TableCell>€{order.total.toFixed(2)}</TableCell>
                     <TableCell>
                         <OrderStatusBadge status={order.status}/>
                     </TableCell>

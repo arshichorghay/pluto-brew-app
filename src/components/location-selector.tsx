@@ -43,8 +43,16 @@ function MapControl({ onLocationChange }: MapControlProps) {
   const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
   
   const placesLib = useMapsLibrary('places');
+  const geocodingLib = useMapsLibrary('geocoding');
+  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if(geocodingLib) {
+        setGeocoder(new geocodingLib.Geocoder());
+    }
+  }, [geocodingLib]);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -138,7 +146,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
   };
 
   const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (deliveryType !== 'delivery' || !e.latLng) return;
+    if (deliveryType !== 'delivery' || !e.latLng || !geocoder) return;
     const newPin = {
       lat: e.latLng.lat(),
       lng: e.latLng.lng()
@@ -146,12 +154,24 @@ function MapControl({ onLocationChange }: MapControlProps) {
     setDeliveryPin(newPin);
     setLatInput(newPin.lat.toFixed(6));
     setLngInput(newPin.lng.toFixed(6));
-    const newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
-    setAddress(newAddress); 
-    if (addressInputRef.current) {
-        addressInputRef.current.value = newAddress;
-    }
-    toast({ title: "Location Set", description: "Delivery pin updated on the map." });
+    
+    geocoder.geocode({ location: e.latLng }, (results, status) => {
+        if (status === 'OK' && results?.[0]) {
+            const newAddress = results[0].formatted_address;
+            setAddress(newAddress);
+            if (addressInputRef.current) {
+                addressInputRef.current.value = newAddress;
+            }
+            toast({ title: "Location Set", description: `Delivery address updated.` });
+        } else {
+            const newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
+            setAddress(newAddress); 
+            if (addressInputRef.current) {
+                addressInputRef.current.value = newAddress;
+            }
+            toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
+        }
+    });
   }
 
   return (

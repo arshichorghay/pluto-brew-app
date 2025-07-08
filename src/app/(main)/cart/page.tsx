@@ -131,7 +131,7 @@ export default function CartPage() {
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
-                      <p className="font-semibold text-lg ml-auto">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-semibold text-lg ml-auto">€{(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.id)}>
@@ -159,16 +159,16 @@ export default function CartPage() {
                   <CardContent className="grid gap-4">
                       <div className="flex items-center justify-between">
                           <p>Subtotal</p>
-                          <p className="font-medium">${cartTotal.toFixed(2)}</p>
+                          <p className="font-medium">€{cartTotal.toFixed(2)}</p>
                       </div>
                       <div className="flex items-center justify-between">
                           <p>Shipping</p>
-                          <p className="font-medium">${shippingFee.toFixed(2)}</p>
+                          <p className="font-medium">€{shippingFee.toFixed(2)}</p>
                       </div>
                       <Separator />
                       <div className="flex items-center justify-between font-bold text-lg">
                           <p>Total</p>
-                          <p>${total.toFixed(2)}</p>
+                          <p>€{total.toFixed(2)}</p>
                       </div>
                   </CardContent>
                   <CardFooter className="flex flex-col gap-2">

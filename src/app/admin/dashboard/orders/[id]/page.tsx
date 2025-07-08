@@ -115,8 +115,8 @@ export default function OrderDetailsPage() {
                                         <TableRow key={item.id}>
                                             <TableCell>{item.name}</TableCell>
                                             <TableCell>{item.quantity}</TableCell>
-                                            <TableCell>${item.price.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
+                                            <TableCell>€{item.price.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">€{(item.price * item.quantity).toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -142,7 +142,7 @@ export default function OrderDetailsPage() {
                             <Separator className="my-2"/>
                             <div className="flex justify-between font-bold text-lg">
                                 <span>Total</span>
-                                <span>${order.total.toFixed(2)}</span>
+                                <span>€{order.total.toFixed(2)}</span>
                             </div>
                         </CardContent>
                     </Card>
