@@ -149,7 +149,8 @@ export function ManageAddressesCard() {
                 <DialogContent 
                     className="max-w-2xl"
                     onPointerDownOutside={(e) => {
-                        if (e.target.closest('.pac-container')) {
+                        const target = e.target as HTMLElement;
+                        if (target.closest('.pac-container')) {
                             e.preventDefault();
                         }
                     }}
@@ -261,7 +262,6 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         });
 
         return () => {
-            // Important: clean up the listener and the DOM element
             if (listener) {
                 google.maps.event.removeListener(listener);
             }
@@ -394,6 +394,3 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         </form>
     );
 }
-
-    
-    
