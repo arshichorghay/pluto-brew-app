@@ -64,20 +64,22 @@ export function AuthForm() {
   };
 
   return (
-    <Tabs defaultValue="login" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="login">Login</TabsTrigger>
-        <TabsTrigger value="register">Register</TabsTrigger>
-      </TabsList>
-      <TabsContent value="login">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Login</CardTitle>
-            <CardDescription>
-              Enter your email below to login to your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+    <Card>
+      <Tabs defaultValue="login" className="w-full">
+        <CardHeader>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Register</TabsTrigger>
+          </TabsList>
+        </CardHeader>
+        <CardContent>
+          <TabsContent value="login" className="mt-0">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold font-headline">Welcome Back!</h2>
+              <p className="text-balance text-sm text-muted-foreground">
+                Enter your credentials to access your account.
+              </p>
+            </div>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -96,18 +98,14 @@ export function AuthForm() {
               )}
               <Button type="submit" className="w-full">Login</Button>
             </form>
-          </CardContent>
-        </Card>
-      </TabsContent>
-      <TabsContent value="register">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Register</CardTitle>
-            <CardDescription>
-              Create an account to start exploring our cosmic brews.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          </TabsContent>
+          <TabsContent value="register" className="mt-0">
+             <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold font-headline">Create an Account</h2>
+              <p className="text-balance text-sm text-muted-foreground">
+                Enter your information to get started.
+              </p>
+            </div>
             <form onSubmit={handleRegister} className="space-y-4">
              <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -130,9 +128,9 @@ export function AuthForm() {
               )}
             <Button type="submit" className="w-full">Create Account</Button>
             </form>
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+          </TabsContent>
+        </CardContent>
+      </Tabs>
+    </Card>
   );
 }
