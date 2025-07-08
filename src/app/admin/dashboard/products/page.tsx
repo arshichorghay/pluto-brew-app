@@ -18,18 +18,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-import { getProducts } from '@/lib/storage';
+import { getProducts, deleteProduct } from '@/lib/storage';
 import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditProductForm } from '@/components/admin/edit-product-form';
+import { MoreHorizontal } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const { toast } = useToast();
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -42,9 +63,36 @@ export default function AdminProductsPage() {
   }, []);
 
   const handleEditClick = (product: Product) => {
-    setSelectedProduct(product);
+    setProductToEdit(product);
     setIsEditDialogOpen(true);
   };
+
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+    try {
+      await deleteProduct(productToDelete.id);
+      toast({
+        title: "Product Deleted",
+        description: `The product "${productToDelete.name}" has been successfully deleted.`,
+      });
+      fetchProducts();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting product",
+        description: "There was a problem deleting the product.",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setProductToDelete(null);
+    }
+  };
+
 
   return (
     <>
@@ -81,7 +129,7 @@ export default function AdminProductsPage() {
                     <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -104,7 +152,18 @@ export default function AdminProductsPage() {
                     <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
                     <TableCell className="hidden md:table-cell">{product.stock}</TableCell>
                     <TableCell>
-                        <Button variant="outline" size="sm" onClick={() => handleEditClick(product)}>Edit</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleEditClick(product)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleDeleteClick(product)} className="text-destructive">Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -116,9 +175,23 @@ export default function AdminProductsPage() {
       <EditProductForm
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        product={selectedProduct}
+        product={productToEdit}
         onProductUpdate={fetchProducts}
       />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product "{productToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

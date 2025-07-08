@@ -18,17 +18,38 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/types";
-import { getUsers } from "@/lib/storage";
+import { getUsers, deleteUser } from "@/lib/storage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EditUserForm } from "@/components/admin/edit-user-form";
+import { MoreHorizontal } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const { toast } = useToast();
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -41,9 +62,36 @@ export default function AdminUsersPage() {
   }, []);
 
   const handleEditClick = (user: User) => {
-    setSelectedUser(user);
+    setUserToEdit(user);
     setIsEditDialogOpen(true);
   };
+
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUser(userToDelete.id);
+      toast({
+        title: "User Deleted",
+        description: `The user "${userToDelete.name}" has been successfully deleted.`,
+      });
+      fetchUsers();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting user",
+        description: "There was a problem deleting the user.",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
 
   return (
     <>
@@ -76,7 +124,7 @@ export default function AdminUsersPage() {
                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -88,7 +136,18 @@ export default function AdminUsersPage() {
                       <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
                     </TableCell>
                     <TableCell>
-                        <Button variant="outline" size="sm" onClick={() => handleEditClick(user)}>Edit</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleEditClick(user)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleDeleteClick(user)} className="text-destructive">Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -100,9 +159,23 @@ export default function AdminUsersPage() {
       <EditUserForm
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        user={selectedUser}
+        user={userToEdit}
         onUserUpdate={fetchUsers}
       />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account for "{userToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

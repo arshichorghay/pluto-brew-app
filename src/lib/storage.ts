@@ -10,6 +10,7 @@ import {
   updateDoc,
   writeBatch,
   getDoc,
+  deleteDoc,
 } from 'firebase/firestore';
 
 import type { User, Order, Location, OrderStatus, NewUser, NewOrder, Product, UpdateUser, UpdateProduct, UpdateLocation } from './types';
@@ -106,6 +107,12 @@ export const updateUser = async (userId: string, data: UpdateUser): Promise<void
     await updateDoc(userRef, updateData);
 };
 
+export const deleteUser = async (userId: string): Promise<void> => {
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    await deleteDoc(userRef);
+};
+
+
 // --- Products ---
 export const getProducts = async (): Promise<Product[]> => {
     const productsCol = collection(db, PRODUCTS_COLLECTION);
@@ -126,6 +133,11 @@ export const getProductById = async (productId: string): Promise<Product | null>
 export const updateProduct = async (productId: string, data: UpdateProduct): Promise<void> => {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId);
     await updateDoc(productRef, data as any);
+};
+
+export const deleteProduct = async (productId: string): Promise<void> => {
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    await deleteDoc(productRef);
 };
 
 
@@ -175,4 +187,9 @@ export const getLocations = async (): Promise<Location[]> => {
 export const updateLocation = async (locationId: string, data: UpdateLocation): Promise<void> => {
     const locationRef = doc(db, LOCATIONS_COLLECTION, locationId);
     await updateDoc(locationRef, data);
+};
+
+export const deleteLocation = async (locationId: string): Promise<void> => {
+    const locationRef = doc(db, LOCATIONS_COLLECTION, locationId);
+    await deleteDoc(locationRef);
 };
