@@ -117,7 +117,7 @@ export default function CartPage() {
                   alt={item.name}
                   className="aspect-square rounded-md object-cover"
                   height={100}
-                  src={item.imageUrl}
+                  src={item.imageUrl || 'https://placehold.co/100x100.png'}
                   width={100}
                   data-ai-hint={item['data-ai-hint']}
                 />

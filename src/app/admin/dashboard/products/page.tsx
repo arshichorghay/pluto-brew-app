@@ -92,7 +92,7 @@ export default function AdminProductsPage() {
                         alt={product.name}
                         className="aspect-square rounded-md object-cover"
                         height="64"
-                        src={product.imageUrl}
+                        src={product.imageUrl || 'https://placehold.co/64x64.png'}
                         width="64"
                         data-ai-hint={product['data-ai-hint']}
                       />

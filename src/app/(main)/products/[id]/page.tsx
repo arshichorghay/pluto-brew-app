@@ -31,7 +31,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             alt={product.name}
             className="aspect-square object-cover border w-full rounded-lg overflow-hidden"
             height={600}
-            src={product.imageUrl}
+            src={product.imageUrl || 'https://placehold.co/600x600.png'}
             width={600}
             data-ai-hint={product['data-ai-hint']}
             />

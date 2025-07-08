@@ -154,17 +154,15 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
 
             <div className="space-y-2">
                 <FormLabel>Current Image</FormLabel>
-                {product?.imageUrl && (
-                    <div className="mt-2">
-                        <Image 
-                            src={product.imageUrl}
-                            alt={product.name}
-                            width={100}
-                            height={100}
-                            className="rounded-md object-cover border"
-                        />
-                    </div>
-                )}
+                <div className="mt-2">
+                    <Image 
+                        src={product?.imageUrl || 'https://placehold.co/100x100.png'}
+                        alt={product?.name || 'Product Image'}
+                        width={100}
+                        height={100}
+                        className="rounded-md object-cover border"
+                    />
+                </div>
             </div>
 
              <FormField control={form.control} name="newImage" render={() => (

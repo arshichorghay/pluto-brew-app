@@ -32,7 +32,7 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             className="aspect-square w-full object-cover"
             height={400}
-            src={product.imageUrl}
+            src={product.imageUrl || 'https://placehold.co/400x400.png'}
             width={400}
             data-ai-hint={product['data-ai-hint']}
           />
