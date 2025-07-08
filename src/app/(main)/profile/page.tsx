@@ -1,11 +1,11 @@
-
 "use client";
 
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { User, Shield } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -28,8 +28,13 @@ export default function ProfilePage() {
         <Card className="max-w-md mx-auto">
             <CardHeader className="items-center text-center p-6">
                 <Avatar className="h-24 w-24 mb-4">
-                    <AvatarImage src="https://placehold.co/96x96.png" alt={user.name} data-ai-hint="user avatar" />
-                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="flex h-full w-full items-center justify-center">
+                        {user.role === 'admin' ? (
+                            <Shield className="h-12 w-12" />
+                        ) : (
+                            <User className="h-12 w-12" />
+                        )}
+                    </AvatarFallback>
                 </Avatar>
                 <CardTitle className="font-headline text-3xl">{user.name}</CardTitle>
                 <CardDescription>{user.email}</CardDescription>

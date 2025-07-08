@@ -1,7 +1,6 @@
-
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,6 +14,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
+import { User, Shield } from "lucide-react";
 
 export function UserNav() {
   const { user, logout } = useAuth();
@@ -38,8 +38,13 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://placehold.co/40x40.png" alt={user.name} data-ai-hint="user avatar" />
-            <AvatarFallback>{user.name?.slice(0,2).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>
+              {user.role === 'admin' ? (
+                <Shield className="h-5 w-5" />
+              ) : (
+                <User className="h-5 w-5" />
+              )}
+            </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
