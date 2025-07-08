@@ -1,5 +1,6 @@
 
-import { db } from './firebase';
+import { db, storage } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   collection,
   getDocs,
@@ -113,10 +114,26 @@ export const getProducts = async (): Promise<Product[]> => {
     return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
 };
 
-export const updateProduct = async (productId: string, data: UpdateProduct): Promise<void> => {
-    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
-    await updateDoc(productRef, data);
+export const uploadProductImage = async (file: File): Promise<string> => {
+    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
 };
+
+export const updateProduct = async (productId: string, data: UpdateProduct, newImageFile?: File): Promise<void> => {
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    
+    const updateData = { ...data };
+
+    if (newImageFile) {
+        const newImageUrl = await uploadProductImage(newImageFile);
+        updateData.imageUrl = newImageUrl;
+    }
+
+    await updateDoc(productRef, updateData as any);
+};
+
 
 // --- Orders ---
 export const getOrders = async (): Promise<Order[]> => {
@@ -156,7 +173,7 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
 
 // --- Locations ---
 export const getLocations = async (): Promise<Location[]> => {
-    const locationsCol = collection(db, LOCATIONS_COLlection);
+    const locationsCol = collection(db, LOCATIONS_COLLECTION);
     const locationSnapshot = await getDocs(locationsCol);
     return locationSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Location));
 };
