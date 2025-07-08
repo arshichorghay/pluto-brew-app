@@ -64,11 +64,12 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
         newImage: null,
       });
     }
-  }, [product, form]);
+  }, [product, form, isOpen]); // Reset form when dialog opens or product changes
 
   const onSubmit = async (data: ProductFormValues) => {
     if (!product) return;
     setIsSaving(true);
+    console.log("Starting product update process...");
 
     try {
         const productUpdateData: UpdateProduct = {
@@ -82,30 +83,41 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
 
         const newImageFile = data.newImage;
 
-        // Check if a new file has actually been selected and is a File instance
         if (newImageFile instanceof File) {
-            // Validate the file before uploading
+            console.log("New image file detected. Validating...");
             if (newImageFile.size > MAX_FILE_SIZE) {
                 throw new Error('Max file size is 5MB.');
             }
             if (!ACCEPTED_IMAGE_TYPES.includes(newImageFile.type)) {
                 throw new Error('Only .jpg, .jpeg, .png and .webp formats are supported.');
             }
-            
-            // Upload the new image and update the URL
-            productUpdateData.imageUrl = await uploadProductImage(newImageFile);
+            console.log("Validation passed. Starting upload...");
+            try {
+                const newImageUrl = await uploadProductImage(newImageFile);
+                console.log("Image uploaded successfully. URL:", newImageUrl);
+                productUpdateData.imageUrl = newImageUrl;
+            } catch (uploadError) {
+                console.error("!!! FAILED AT IMAGE UPLOAD !!!", uploadError);
+                toast({ variant: 'destructive', title: 'Image Upload Failed', description: 'Could not upload the new image. Check console for details.' });
+                return; // Stop execution
+            }
+        } else {
+            console.log("No new image file detected. Skipping upload.");
         }
 
+        console.log("Updating product document in Firestore with data:", productUpdateData);
         await updateProduct(product.id, productUpdateData);
-        
+        console.log("Product document updated successfully.");
+
         toast({
             title: 'Product Updated',
             description: `"${data.name}" has been successfully updated.`,
         });
         onProductUpdate();
         onOpenChange(false);
+
     } catch (error) {
-        console.error("Detailed error updating product:", error);
+        console.error("!!! ERROR IN ONSUBMIT PROCESS !!!", error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         toast({
             variant: 'destructive',
@@ -113,13 +125,14 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             description: errorMessage,
         });
     } finally {
+        console.log("Finishing update process, resetting button state.");
         setIsSaving(false);
     }
   };
-
+  
+  const fileRef = form.register('newImage');
   const imageField = form.watch('newImage');
   const previewUrl = imageField instanceof File ? URL.createObjectURL(imageField) : (product?.imageUrl || 'https://placehold.co/100x100.png');
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -179,31 +192,26 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
                         width={100}
                         height={100}
                         className="rounded-md object-cover border"
+                        unoptimized // This helps avoid issues with temporary blob URLs for previews
                     />
                 </div>
             </div>
 
-            <FormField
-              control={form.control}
-              name="newImage"
-              render={({ field: { onChange, value, ...rest } }) => (
-                <FormItem>
-                  <FormLabel>Upload New Image</FormLabel>
-                  <FormControl>
+            <FormItem>
+                <FormLabel>Upload New Image</FormLabel>
+                <FormControl>
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => onChange(e.target.files?.[0] || null)}
-                      {...rest}
+                      {...fileRef}
                     />
-                  </FormControl>
-                  <FormDescription>
+                </FormControl>
+                <FormDescription>
                     Leave blank to keep the current image. Max 5MB.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                </FormDescription>
+                <FormMessage />
+            </FormItem>
+
             <DialogFooter>
                <Button type="submit" disabled={isSaving}>
                 {isSaving ? 'Saving...' : 'Save changes'}
