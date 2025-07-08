@@ -35,10 +35,18 @@ const AutocompleteInput = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
             return;
         }
 
+        const kitCampusCenter = { lat: 49.00937, lng: 8.41656 };
+
         if (!autocompleteRef.current) {
             autocompleteRef.current = new places.Autocomplete(inputRef.current, {
                 fields: ["geometry", "formatted_address", "name"],
                 types: ["address"],
+                // Bias search results to the Karlsruhe area around KIT
+                locationBias: {
+                    center: kitCampusCenter,
+                    radius: 5000, // 5km radius
+                },
+                strictBounds: false, // Allow searching outside the biased area
             });
         }
         
@@ -65,7 +73,7 @@ const AutocompleteInput = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
     );
 };
 
-function MapControl({ onLocationChange }: MapControlProps) {
+function MapControl({ onLocationChange }: {onLocationChange: (location: LocationInfo | null) => void}) {
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
   
   const [allLocations, setAllLocations] = useState<LocationType[]>([]);
@@ -81,6 +89,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
   const geocodingLib = useMapsLibrary('geocoding');
   const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
   const { toast } = useToast();
+  const autocompleteInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if(geocodingLib) {
@@ -121,7 +130,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
   }, [deliveryType, selectedPickupLocation, address, deliveryPin, deliverySource, onLocationChange]);
 
   const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
-    if (place.geometry?.location && inputRef.current) {
+    if (place.geometry?.location) {
         const newPin = {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng(),
@@ -133,13 +142,17 @@ function MapControl({ onLocationChange }: MapControlProps) {
         setAddress(formattedAddress);
         setLatInput(newPin.lat.toString());
         setLngInput(newPin.lng.toString());
-        inputRef.current.value = formattedAddress;
         
+        // This is a bit of a hack to update the underlying input of the Autocomplete component
+        // which is not directly exposed. We can't use the ref from AutocompleteInput here.
+        const inputElement = document.getElementById('address-search') as HTMLInputElement;
+        if (inputElement) {
+          inputElement.value = formattedAddress;
+        }
+
         toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
     }
   };
-
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleCoordinateSet = () => {
     const lat = parseFloat(latInput);
@@ -153,8 +166,9 @@ function MapControl({ onLocationChange }: MapControlProps) {
     setMapCenter(newPin);
     const newAddress = `Lat: ${lat}, Lng: ${lng}`;
     setAddress(newAddress); 
-    if (inputRef.current) {
-        inputRef.current.value = newAddress;
+    const inputElement = document.getElementById('address-search') as HTMLInputElement;
+    if (inputElement) {
+      inputElement.value = newAddress;
     }
     toast({ title: 'Location Set', description: `Pin set to ${newAddress}` });
   };
@@ -173,15 +187,17 @@ function MapControl({ onLocationChange }: MapControlProps) {
         if (status === 'OK' && results?.[0]) {
             const newAddress = results[0].formatted_address;
             setAddress(newAddress);
-            if (inputRef.current) {
-                inputRef.current.value = newAddress;
+            const inputElement = document.getElementById('address-search') as HTMLInputElement;
+            if (inputElement) {
+              inputElement.value = newAddress;
             }
             toast({ title: "Location Set", description: `Delivery address updated.` });
         } else {
             const newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
             setAddress(newAddress); 
-            if (inputRef.current) {
-                inputRef.current.value = newAddress;
+            const inputElement = document.getElementById('address-search') as HTMLInputElement;
+            if (inputElement) {
+              inputElement.value = newAddress;
             }
             toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
         }
