@@ -19,33 +19,83 @@ import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { getOrders } from "@/lib/storage";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
+
+function OrdersSkeleton() {
+    return (
+        <div className="border rounded-lg">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="w-[100px]">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                            <TableCell><Skeleton className="h-9 w-16" /></TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    )
+}
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [userOrders, setUserOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
+    // Wait for the authentication check to complete
+    if (isAuthLoading) {
+      return; 
+    }
+    // If auth is done and there's no user, redirect to login
+    if (!user) {
+      router.push('/');
+      return;
+    }
+
+    // Auth is complete and we have a user, so fetch their orders
     const fetchOrders = async () => {
-      setIsLoading(true);
-      if (user) {
-        const orders = await getOrders();
-        setUserOrders(orders.filter(order => order.userId === user.id));
-      } else {
-        setUserOrders([]);
-      }
-      setIsLoading(false);
+      setIsLoadingOrders(true);
+      const orders = await getOrders();
+      setUserOrders(orders.filter(order => order.userId === user.id));
+      setIsLoadingOrders(false);
     };
 
     fetchOrders();
-  }, [user]);
+  }, [user, isAuthLoading, router]);
 
+  // While checking auth status or if there's no user, show a loading skeleton.
+  // This prevents the page from flashing content before redirecting.
+  if (isAuthLoading || !user) {
+    return (
+        <div className="container mx-auto py-8">
+            <h1 className="text-3xl md:text-4xl font-headline mb-8">Your Orders</h1>
+            <OrdersSkeleton />
+        </div>
+    );
+  }
+
+  // Auth is complete, user is logged in. Render the orders.
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl md:text-4xl font-headline mb-8">Your Orders</h1>
       <div className="border rounded-lg">
         <Table>
-          {!isLoading && userOrders.length === 0 && (
+          {!isLoadingOrders && userOrders.length === 0 && (
             <TableCaption>
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                     <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
@@ -67,7 +117,7 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoadingOrders ? (
                 Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>

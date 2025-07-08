@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from "@/context/auth-context";
@@ -8,14 +9,44 @@ import { useRouter } from "next/navigation";
 import { User, Shield } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddressManager } from "@/components/address-manager";
+import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
 
-  if (!user) {
-    // This could redirect to login or show a message.
-    return null;
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) {
+    return (
+        <div className="container mx-auto py-8">
+            <h1 className="text-3xl md:text-4xl font-headline mb-8">Your Account</h1>
+             <Tabs defaultValue="profile" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2 mb-8">
+                    <TabsTrigger value="profile">Profile</TabsTrigger>
+                    <TabsTrigger value="addresses">Addresses</TabsTrigger>
+                </TabsList>
+                <TabsContent value="profile">
+                    <Card className="max-w-md">
+                        <CardHeader className="items-center text-center p-6">
+                            <Skeleton className="h-24 w-24 rounded-full mb-4" />
+                            <Skeleton className="h-8 w-40" />
+                            <Skeleton className="h-5 w-48 mt-2" />
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
   }
 
   const handleLogout = () => {
