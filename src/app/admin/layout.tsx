@@ -1,9 +1,9 @@
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
   Package,
   ShoppingCart,
   Users,
@@ -36,7 +36,6 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/admin/dashboard", icon: Home, label: "Dashboard" },
     { href: "/admin/dashboard/orders", icon: ShoppingCart, label: "Orders" },
     { href: "/admin/dashboard/products", icon: Package, label: "Products" },
     { href: "/admin/dashboard/users", icon: Users, label: "Users" },
