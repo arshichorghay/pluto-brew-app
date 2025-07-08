@@ -150,6 +150,11 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
     return orders.find(o => o.id === orderId);
 };
 
+export const deleteOrder = async (orderId: string): Promise<void> => {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    await deleteDoc(orderRef);
+};
+
 
 // --- Locations ---
 export const getLocations = async (): Promise<Location[]> => {

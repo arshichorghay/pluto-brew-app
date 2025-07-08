@@ -136,7 +136,9 @@ export default function OrdersPage() {
                     €{order.total.toFixed(2)}
                     </TableCell>
                     <TableCell>
-                        <Button variant="outline" size="sm">View</Button>
+                        <Button asChild variant="outline" size="sm">
+                            <Link href={`/orders/${order.id}`}>View</Link>
+                        </Button>
                     </TableCell>
                 </TableRow>
                 ))
