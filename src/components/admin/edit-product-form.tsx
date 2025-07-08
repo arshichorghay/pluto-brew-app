@@ -101,8 +101,6 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
     }
   };
 
-  const imageRef = form.register("newImage");
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
@@ -165,20 +163,26 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
                 </div>
             </div>
 
-             <FormField control={form.control} name="newImage" render={() => (
+            <FormField
+              control={form.control}
+              name="newImage"
+              render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Upload New Image</FormLabel>
-                    <FormControl>
-                        <Input 
-                            type="file" 
-                            accept="image/*"
-                            {...imageRef}
-                        />
-                    </FormControl>
-                    <FormDescription>Leave blank to keep the current image. Max 5MB.</FormDescription>
-                    <FormMessage />
+                  <FormLabel>Upload New Image</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => field.onChange(e.target.files)}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Leave blank to keep the current image. Max 5MB.
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
-            )} />
+              )}
+            />
             <DialogFooter>
                <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
