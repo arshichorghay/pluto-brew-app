@@ -26,7 +26,7 @@ const productFormSchema = z.object({
   stock: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   category: z.string().min(1, 'Category is required.'),
   newImage: z
-    .instanceof(FileList)
+    .any()
     .optional()
     .refine((files) => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
