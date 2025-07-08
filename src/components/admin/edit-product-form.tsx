@@ -81,9 +81,10 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             imageUrl: product.imageUrl, // Start with the existing URL
         };
 
-        const newImageFile = data.newImage;
+        const newImageFileList = data.newImage as FileList | undefined;
 
-        if (newImageFile instanceof File) {
+        if (newImageFileList && newImageFileList.length > 0) {
+            const newImageFile = newImageFileList[0];
             console.log("New image file detected. Validating...");
             if (newImageFile.size > MAX_FILE_SIZE) {
                 throw new Error('Max file size is 5MB.');
@@ -99,6 +100,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             } catch (uploadError) {
                 console.error("!!! FAILED AT IMAGE UPLOAD !!!", uploadError);
                 toast({ variant: 'destructive', title: 'Image Upload Failed', description: 'Could not upload the new image. Check console for details.' });
+                setIsSaving(false);
                 return; // Stop execution
             }
         } else {
@@ -126,13 +128,17 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
         });
     } finally {
         console.log("Finishing update process, resetting button state.");
-        setIsSaving(false);
+        if (isSaving) {
+          setIsSaving(false);
+        }
     }
   };
   
   const fileRef = form.register('newImage');
-  const imageField = form.watch('newImage');
-  const previewUrl = imageField instanceof File ? URL.createObjectURL(imageField) : (product?.imageUrl || 'https://placehold.co/100x100.png');
+  const imageField = form.watch('newImage') as FileList | undefined;
+  const previewUrl = imageField && imageField.length > 0 
+    ? URL.createObjectURL(imageField[0]) 
+    : (product?.imageUrl || 'https://placehold.co/100x100.png');
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
