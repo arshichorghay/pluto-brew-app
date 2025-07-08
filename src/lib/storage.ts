@@ -4,17 +4,16 @@ import {
   collection,
   getDocs,
   addDoc,
-  query,
-  where,
   doc,
   updateDoc,
   writeBatch,
   getDoc,
   deleteDoc,
+  setDoc,
 } from 'firebase/firestore';
 
-import type { User, Order, Location, OrderStatus, NewUser, NewOrder, Product, UpdateUser, UpdateProduct, UpdateLocation } from './types';
-import { mockUsers as defaultUsers, mockOrders as defaultOrders, mockLocations as defaultLocations, mockProducts as defaultProducts } from './mock-data-defaults';
+import type { User, Order, Location, OrderStatus, NewOrder, Product, UpdateUser, UpdateProduct, UpdateLocation } from './types';
+import { mockOrders as defaultOrders, mockLocations as defaultLocations, mockProducts as defaultProducts } from './mock-data-defaults';
 
 const USERS_COLLECTION = 'users';
 const ORDERS_COLLECTION = 'orders';
@@ -43,7 +42,7 @@ const seedCollection = async <T extends {id: string}>(collectionName: string, de
 export const seedDatabase = async () => {
     try {
         await Promise.all([
-            seedCollection<User>(USERS_COLLECTION, defaultUsers),
+            // User seeding is no longer done here. It's handled by the registration flow.
             seedCollection<Location>(LOCATIONS_COLLECTION, defaultLocations),
             seedCollection<Order>(ORDERS_COLLECTION, defaultOrders),
             seedCollection<Product>(PRODUCTS_COLLECTION, defaultProducts),
@@ -70,42 +69,19 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     return null;
 }
 
-export const addUser = async (user: NewUser): Promise<User> => {
-    const usersCol = collection(db, USERS_COLLECTION);
-     // Check if user already exists
-    const q = query(usersCol, where("email", "==", user.email));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        throw new Error("User with this email already exists.");
-    }
-    const docRef = await addDoc(usersCol, user);
-    return { ...user, id: docRef.id };
+export const createUserRecord = async (user: User): Promise<void> => {
+    const userRef = doc(db, USERS_COLLECTION, user.id);
+    await setDoc(userRef, user);
 };
-
-export const findUserByCredentials = async (email: string, password?: string): Promise<User | undefined> => {
-    const usersCol = collection(db, USERS_COLLECTION);
-    const q = query(usersCol, where("email", "==", email), where("password", "==", password));
-    const userSnapshot = await getDocs(q);
-    if (userSnapshot.empty) {
-        return undefined;
-    }
-    const userDoc = userSnapshot.docs[0];
-    return { ...userDoc.data(), id: userDoc.id } as User;
-}
 
 export const updateUser = async (userId: string, data: UpdateUser): Promise<void> => {
     const userRef = doc(db, USERS_COLLECTION, userId);
-    const updateData = { ...data };
-
-    // Do not update password if it's empty or undefined
-    if (!updateData.password) {
-        delete updateData.password;
-    }
-
-    await updateDoc(userRef, updateData);
+    await updateDoc(userRef, data);
 };
 
 export const deleteUser = async (userId: string): Promise<void> => {
+    // Note: This only deletes the Firestore record.
+    // Deleting a user from Firebase Auth requires the Admin SDK and should be handled in a secure backend environment.
     const userRef = doc(db, USERS_COLLECTION, userId);
     await deleteDoc(userRef);
 };

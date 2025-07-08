@@ -8,16 +8,15 @@ export interface SavedAddress {
 }
 
 export interface User {
-  id:string;
+  id:string; // This will be the Firebase Auth UID
   name: string;
   email: string;
-  password?: string;
   role: 'customer' | 'admin';
   savedAddresses?: SavedAddress[];
 }
 
 export type NewUser = Omit<User, 'id'>;
-export type UpdateUser = Partial<Omit<User, 'id'>>;
+export type UpdateUser = Partial<Omit<User, 'id' | 'email'>>; // Prevent email from being changed in this flow
 
 export interface Product {
   id: string;

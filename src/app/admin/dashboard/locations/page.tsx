@@ -100,7 +100,6 @@ export default function AdminLocationsPage() {
                   <CardTitle className="font-headline">Store Locations</CardTitle>
                   <CardDescription>Manage beer shop locations.</CardDescription>
               </div>
-              <Button>Add Location</Button>
           </div>
         </CardHeader>
         <CardContent>

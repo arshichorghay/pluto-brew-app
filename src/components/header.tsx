@@ -9,6 +9,7 @@ import { HeaderSearch } from "./header-search";
 import { HeaderActions } from "./header-actions";
 import { Input } from "./ui/input";
 import { Search } from "lucide-react";
+import { ClientOnly } from "./client-only";
 
 function SearchSkeleton() {
   return (
@@ -36,9 +37,11 @@ export function Header() {
         <div className="hidden md:block">
             <MainNav />
         </div>
-        <Suspense fallback={<SearchSkeleton />}>
-          <HeaderSearch />
-        </Suspense>
+        <ClientOnly fallback={<SearchSkeleton />}>
+          <Suspense fallback={<SearchSkeleton />}>
+            <HeaderSearch />
+          </Suspense>
+        </ClientOnly>
         <HeaderActions />
       </div>
     </header>

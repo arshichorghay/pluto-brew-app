@@ -103,7 +103,6 @@ export default function AdminProductsPage() {
                   <CardTitle className="font-headline">Products</CardTitle>
                   <CardDescription>Manage your products here.</CardDescription>
               </div>
-              <Button>Add Product</Button>
           </div>
         </CardHeader>
         <CardContent>

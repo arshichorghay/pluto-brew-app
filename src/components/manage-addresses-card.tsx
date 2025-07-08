@@ -44,7 +44,7 @@ const AddressIcon = ({ alias }: { alias: string }) => {
 }
 
 export function ManageAddressesCard() {
-    const { user, login } = useAuth();
+    const { user, refreshUser } = useAuth();
     const { toast } = useToast();
     
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -74,8 +74,7 @@ export function ManageAddressesCard() {
         
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            // Re-login to refresh user data in context. A more robust solution might use a dedicated context updater.
-            await login(user.email, user.password);
+            await refreshUser();
             toast({ title: "Address Deleted", description: `The address "${addressToDelete.alias}" was removed.` });
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Failed to delete address." });
@@ -101,8 +100,7 @@ export function ManageAddressesCard() {
 
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            // Re-login to refresh user data
-            await login(user.email, user.password);
+            await refreshUser();
             toast({ title: "Address Saved", description: "Your address list has been updated." });
             setIsFormOpen(false);
         } catch (error) {

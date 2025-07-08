@@ -1,163 +1,106 @@
 
 "use client";
 
-import type { User, NewUser } from "@/lib/types";
-import { createContext, useContext, useState, useEffect, type ReactNode, useRef, useCallback } from "react";
-import { addUser, findUserByCredentials, getUserById, seedDatabase } from "@/lib/storage";
-import { useToast } from "@/hooks/use-toast";
+import type { User } from "@/lib/types";
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from "react";
+import { auth } from "@/lib/firebase";
+import { 
+    onAuthStateChanged, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut,
+    updateProfile,
+    type User as FirebaseUser
+} from "firebase/auth";
+import { createUserRecord, getUserById } from "@/lib/storage";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password?: string) => Promise<User | null>;
-  logout: () => void;
-  register: (name: string, email: string, password?: string) => Promise<User | null>;
+  logout: () => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<User | null>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-const LOCAL_STORAGE_KEY = "pluto-brew-user";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const logout = useCallback(() => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
-      inactivityTimerRef.current = null;
-    }
-    setUser(null);
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  }, []);
-
-  const resetInactivityTimer = useCallback(() => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
-    }
-    inactivityTimerRef.current = setTimeout(() => {
-      toast({
-        title: "Session Expired",
-        description: "You have been logged out due to inactivity.",
-        variant: "destructive",
-      });
-      logout();
-    }, INACTIVITY_TIMEOUT);
-  }, [logout, toast]);
-
-  // Effect to seed database and load user from localStorage on initial load
   useEffect(() => {
-    const initializeApp = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
-      await seedDatabase();
-      
-      try {
-        const storedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+      if (firebaseUser) {
+        // User is signed in, now fetch our custom user data from Firestore
+        const appUser = await getUserById(firebaseUser.uid);
+        if (appUser) {
+          setUser(appUser);
+        } else {
+            // This could happen if the Firestore doc wasn't created properly
+            // Or if a user exists in Auth but not in our 'users' collection
+            console.warn("Firebase Auth user exists but no corresponding Firestore document found.");
+            // We create a user record on the fly to self-heal
+            const newRecord: User = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || 'New User',
+                email: firebaseUser.email!,
+                role: 'customer',
+            }
+            await createUserRecord(newRecord);
+            setUser(newRecord);
         }
-      } catch (e) {
-        console.error("Failed to parse user from localStorage, clearing.", e);
-        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      } else {
+        // User is signed out
         setUser(null);
-      } finally {
-        setIsLoading(false);
       }
-    };
-    
-    initializeApp();
+      setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
-  
-  // Effect to handle user activity and inactivity timeout
-  useEffect(() => {
-    if (user) {
-      const events: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'click', 'scroll'];
-      
-      const handleActivity = () => {
-        resetInactivityTimer();
-      };
-
-      events.forEach(event => window.addEventListener(event, handleActivity));
-      resetInactivityTimer(); // Start the timer initially
-
-      return () => {
-        if (inactivityTimerRef.current) {
-          clearTimeout(inactivityTimerRef.current);
-        }
-        events.forEach(event => window.removeEventListener(event, handleActivity));
-      };
-    }
-  }, [user, resetInactivityTimer]);
-
-  // Effect to sync logout across tabs
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === LOCAL_STORAGE_KEY && !event.newValue) {
-        // User was logged out or data cleared in another tab
-        logout();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [logout]);
-
 
   const login = async (email: string, password?: string): Promise<User | null> => {
-    const foundUser = await findUserByCredentials(email, password);
-    if (foundUser) {
-      const { password: _, ...userToStore } = foundUser;
-      setUser(userToStore as User);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
-      return userToStore as User;
-    }
-    return null;
+    if (!password) throw new Error("Password is required to log in.");
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const appUser = await getUserById(userCredential.user.uid);
+    return appUser; // onAuthStateChanged will set the state
   };
 
-  const register = async (name: string, email: string, password?: string): Promise<User | null> => {
-    const newUser: NewUser = {
-        name,
-        email,
-        password,
-        role: 'customer'
+  const register = async (name: string, email: string, password: string): Promise<User | null> => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
+
+    // Update Firebase Auth profile
+    await updateProfile(firebaseUser, { displayName: name });
+    
+    // Create our user record in Firestore
+    const newUser: User = {
+        id: firebaseUser.uid,
+        name: name,
+        email: email,
+        role: email.toLowerCase() === 'admin@plutobrew.com' ? 'admin' : 'customer',
     };
+    await createUserRecord(newUser);
 
-    try {
-        const registeredUser = await addUser(newUser);
-        const { password: _, ...userToStore } = registeredUser;
-        setUser(userToStore as User);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
-        return userToStore as User;
-    } catch (error) {
-        console.error("Registration failed:", error);
-        return null;
-    }
-  }
+    return newUser; // onAuthStateChanged will set the state
+  };
 
+  const logout = async (): Promise<void> => {
+    await signOut(auth);
+  };
+  
   const refreshUser = useCallback(async () => {
-    if (user?.id) {
-        const freshUser = await getUserById(user.id);
-        if (freshUser) {
-            const { password: _, ...userToStore } = freshUser;
-            setUser(userToStore as User);
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
-        } else {
-            // This is the fix: Do not log out on a temporary failure.
-            // Instead, notify the user that the sync failed but keep the session.
-            toast({
-                variant: "destructive",
-                title: "Failed to Sync Profile",
-                description: "Your session is still active, but we couldn't fetch the latest updates.",
-            });
-        }
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser) {
+      const appUser = await getUserById(firebaseUser.uid);
+      if (appUser) {
+        setUser(appUser);
+      }
     }
-  }, [user, toast]);
-
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, register, refreshUser }}>

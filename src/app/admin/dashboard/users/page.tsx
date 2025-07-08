@@ -102,7 +102,6 @@ export default function AdminUsersPage() {
                   <CardTitle className="font-headline">Users</CardTitle>
                   <CardDescription>Manage user accounts.</CardDescription>
               </div>
-              <Button>Add User</Button>
           </div>
         </CardHeader>
         <CardContent>

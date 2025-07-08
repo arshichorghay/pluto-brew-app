@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +18,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
 export function AuthForm() {
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("admin@plutobrew.com");
+  const [loginPassword, setLoginPassword] = useState("admin");
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
@@ -34,16 +32,36 @@ export function AuthForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const user = await login(loginEmail, loginPassword);
-    if (user) {
-      toast({ title: "Login Successful", description: `Welcome back, ${user.name}!` });
-      if (user.role === 'admin') {
-        router.push("/admin/dashboard");
+    try {
+      const user = await login(loginEmail, loginPassword);
+      if (user) {
+        toast({ title: "Login Successful", description: `Welcome back, ${user.name}!` });
+        if (user.role === 'admin') {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/marketplace");
+        }
       } else {
-        router.push("/marketplace");
+        // This case should ideally not be hit if login throws on failure
+        setError("Invalid email or password. Please try again.");
       }
-    } else {
-      setError("Invalid email or password. Please try again.");
+    } catch (err: any) {
+       let message = "An unknown error occurred.";
+       if (err.code) {
+         switch (err.code) {
+            case 'auth/user-not-found':
+            case 'auth/wrong-password':
+            case 'auth/invalid-credential':
+              message = 'Invalid email or password.';
+              break;
+            case 'auth/too-many-requests':
+              message = 'Too many login attempts. Please try again later.';
+              break;
+            default:
+              message = 'An error occurred during login. Please try again.';
+         }
+       }
+       setError(message);
     }
   };
 
@@ -54,12 +72,30 @@ export function AuthForm() {
       setError("Please fill in all fields.");
       return;
     }
-    const user = await register(regName, regEmail, regPassword);
-    if (user) {
-        toast({ title: "Registration Successful", description: `Welcome, ${user.name}!` });
-        router.push("/marketplace");
-    } else {
-        setError("An account with this email already exists.");
+    try {
+        const user = await register(regName, regEmail, regPassword);
+        if (user) {
+            toast({ title: "Registration Successful", description: `Welcome, ${user.name}!` });
+            router.push("/marketplace");
+        }
+    } catch (err: any) {
+        let message = "An unknown error occurred during registration.";
+        if (err.code) {
+            switch (err.code) {
+                case 'auth/email-already-in-use':
+                    message = 'An account with this email address already exists.';
+                    break;
+                case 'auth/weak-password':
+                    message = 'The password is too weak. Please choose a stronger password.';
+                    break;
+                case 'auth/invalid-email':
+                    message = 'Please enter a valid email address.';
+                    break;
+                default:
+                    message = 'An error occurred during registration. Please try again.';
+            }
+        }
+        setError(message);
     }
   };
 
