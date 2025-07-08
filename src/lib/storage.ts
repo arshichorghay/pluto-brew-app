@@ -53,7 +53,9 @@ const seedDatabase = async () => {
     }
 };
 
-seedDatabase();
+// Removed automatic seeding call to prevent build issues.
+// The database is already seeded from the mock data defaults.
+// seedDatabase();
 
 // --- Users ---
 export const getUsers = async (): Promise<User[]> => {
