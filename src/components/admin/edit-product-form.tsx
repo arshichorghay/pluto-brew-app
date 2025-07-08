@@ -50,6 +50,8 @@ interface EditProductFormProps {
 
 export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate }: EditProductFormProps) {
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = React.useState(false);
+  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -77,6 +79,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
 
   const onSubmit = async (data: ProductFormValues) => {
     if (!product) return;
+    setIsSaving(true);
 
     try {
       const newImageFile = data.newImage instanceof File ? data.newImage : undefined;
@@ -102,6 +105,8 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
         title: 'Error updating product',
         description: `There was a problem saving the product information: ${errorMessage}`,
       });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -193,8 +198,8 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
               )}
             />
             <DialogFooter>
-               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
+               <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save changes'}
               </Button>
             </DialogFooter>
           </form>
