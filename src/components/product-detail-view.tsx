@@ -21,13 +21,13 @@ export function ProductDetailView({ product }: { product: Product }) {
     <div className="container mx-auto py-8">
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
         <div className="grid gap-4 items-start justify-center">
-          <div className="w-full max-w-[450px]">
+          <div className="w-full max-w-[500px]">
             <Image
               alt={product.name}
               className="aspect-square object-cover border w-full rounded-lg overflow-hidden"
-              height={450}
-              src={product.imageUrl || 'https://placehold.co/450x450.png'}
-              width={450}
+              height={500}
+              src={product.imageUrl || 'https://placehold.co/500x500.png'}
+              width={500}
               data-ai-hint={product['data-ai-hint']}
             />
           </div>
