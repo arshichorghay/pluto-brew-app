@@ -146,7 +146,14 @@ export function ManageAddressesCard() {
             </CardFooter>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent 
+                    className="max-w-2xl"
+                    onPointerDownOutside={(e) => {
+                        if (e.target.closest('.pac-container')) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>{addressToEdit ? 'Edit' : 'Add'} Address</DialogTitle>
                     </DialogHeader>
@@ -254,12 +261,17 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         });
 
         return () => {
-            google.maps.event.removeListener(listener);
+            // Important: clean up the listener and the DOM element
+            if (listener) {
+                google.maps.event.removeListener(listener);
+            }
             if (addressInputRef.current) {
                 google.maps.event.clearInstanceListeners(addressInputRef.current);
             }
-            const pacContainers = document.querySelectorAll('.pac-container');
-            pacContainers.forEach(c => c.remove());
+            const pacContainers = document.getElementsByClassName('pac-container');
+            for (let i = 0; i < pacContainers.length; i++) {
+                pacContainers[i].remove();
+            }
         };
     }, [placesLib, toast]);
 
@@ -383,4 +395,5 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
     );
 }
 
+    
     
