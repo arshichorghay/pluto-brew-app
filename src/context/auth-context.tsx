@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { User, NewUser } from "@/lib/types";
@@ -138,10 +139,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(userToStore as User);
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userToStore));
         } else {
-            logout();
+            // This is the fix: Do not log out on a temporary failure.
+            // Instead, notify the user that the sync failed but keep the session.
+            toast({
+                variant: "destructive",
+                title: "Failed to Sync Profile",
+                description: "Your session is still active, but we couldn't fetch the latest updates.",
+            });
         }
     }
-  }, [user, logout]);
+  }, [user, toast]);
 
 
   return (
