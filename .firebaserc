@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "pluto-brew-app"
-  }
+    "default": "pluto-brew-app",
+    "versionone": "pluto-26ec8"
+  },
+  "targets": {},
+  "etags": {}
 }

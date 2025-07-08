@@ -32,17 +32,24 @@ This guide provides step-by-step instructions to deploy your Pluto Brew applicat
 
 ---
 
-### Step 2: Build and Deploy
+### Step 2: Build Your App
 
-You're ready for takeoff!
+Before you can deploy, you must first build the static version of your site. This command packages everything into the `out` directory that Firebase needs.
 
-1.  **Build the app:** This command creates an optimized, static version of your app in a folder named `out`.
-    ```bash
-    npm run build
-    ```
-2.  **Deploy to Hosting:** This command sends your built app to Firebase Hosting and makes it live on the internet.
-    ```bash
-    firebase deploy --only hosting
-    ```
+> **⚠️ Important:** You must run this command before you deploy.
+
+```bash
+npm run build
+```
+
+---
+
+### Step 3: Deploy to Firebase
+
+Now that your app is built, you can deploy it to Firebase Hosting.
+
+```bash
+firebase deploy --only hosting
+```
 
 After the `deploy` command finishes, it will give you the public URL for your live website. That's it! Your Pluto Brew marketplace is now live on the web.
