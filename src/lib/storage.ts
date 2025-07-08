@@ -1,92 +1,118 @@
 
-'use client';
+import { db } from './firebase';
+import {
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  doc,
+  updateDoc,
+  writeBatch,
+  setDoc,
+} from 'firebase/firestore';
 
-import type { User, Order, Location, OrderStatus } from './types';
+import type { User, Order, Location, OrderStatus, NewUser, NewOrder } from './types';
 import { mockUsers as defaultUsers, mockOrders as defaultOrders, mockLocations as defaultLocations } from './mock-data-defaults';
 
-const USERS_KEY = 'pluto-brew-users';
-const ORDERS_KEY = 'pluto-brew-orders';
-const LOCATIONS_KEY = 'pluto-brew-locations';
+const USERS_COLLECTION = 'users';
+const ORDERS_COLLECTION = 'orders';
+const LOCATIONS_COLLECTION = 'locations';
 
-const getFromStorage = <T>(key: string, defaultValue: T): T => {
-    if (typeof window === 'undefined') {
-        return defaultValue;
-    }
-    try {
-        const item = window.localStorage.getItem(key);
-        if (item) {
-            return JSON.parse(item);
-        } else {
-            setToStorage(key, defaultValue);
-            return defaultValue;
-        }
-    } catch (error) {
-        console.warn(`Error reading from localStorage key “${key}”:`, error);
-        return defaultValue;
+// Helper function to seed data if a collection is empty
+const seedCollection = async <T extends {id: string}>(collectionName: string, defaultData: T[]) => {
+    const collectionRef = collection(db, collectionName);
+    const snapshot = await getDocs(collectionRef);
+    if (snapshot.empty && defaultData.length > 0) {
+        console.log(`Seeding ${collectionName}...`);
+        const batch = writeBatch(db);
+        defaultData.forEach((item) => {
+            const docRef = doc(db, collectionName, item.id); // Use the mock data ID
+            batch.set(docRef, item);
+        });
+        await batch.commit();
+        console.log(`${collectionName} seeded.`);
     }
 };
 
-const setToStorage = <T>(key: string, value: T) => {
-    if (typeof window === 'undefined') {
-        console.warn(`Tried to set localStorage key “${key}” on the server.`);
-        return;
-    }
+
+// Seed all necessary collections
+const seedDatabase = async () => {
     try {
-        window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-        console.error(`Error writing to localStorage key “${key}”:`, error);
+        await Promise.all([
+            seedCollection<User>(USERS_COLLECTION, defaultUsers),
+            seedCollection<Location>(LOCATIONS_COLLECTION, defaultLocations),
+            seedCollection<Order>(ORDERS_COLLECTION, defaultOrders)
+        ]);
+    } catch (e) {
+        console.error("Error seeding database: ", e);
     }
 };
+
+seedDatabase();
 
 // --- Users ---
-export const getUsers = (): User[] => getFromStorage(USERS_KEY, defaultUsers);
-export const saveUsers = (users: User[]) => setToStorage(USERS_KEY, users);
+export const getUsers = async (): Promise<User[]> => {
+    const usersCol = collection(db, USERS_COLLECTION);
+    const userSnapshot = await getDocs(usersCol);
+    return userSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
+};
 
-export const addUser = (user: User): User => {
-    const users = getUsers();
-    if (users.some(u => u.email === user.email)) {
+export const addUser = async (user: NewUser): Promise<User> => {
+    const usersCol = collection(db, USERS_COLLECTION);
+     // Check if user already exists
+    const q = query(usersCol, where("email", "==", user.email));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
         throw new Error("User with this email already exists.");
     }
-    const updatedUsers = [...users, user];
-    saveUsers(updatedUsers);
-    return user;
+    const docRef = await addDoc(usersCol, user);
+    return { ...user, id: docRef.id };
 };
 
-export const findUserByCredentials = (email: string, password?: string): User | undefined => {
-    const users = getUsers();
-    return users.find(u => u.email === email && u.password === password);
+export const findUserByCredentials = async (email: string, password?: string): Promise<User | undefined> => {
+    const usersCol = collection(db, USERS_COLLECTION);
+    const q = query(usersCol, where("email", "==", email), where("password", "==", password));
+    const userSnapshot = await getDocs(q);
+    if (userSnapshot.empty) {
+        return undefined;
+    }
+    const userDoc = userSnapshot.docs[0];
+    return { ...userDoc.data(), id: userDoc.id } as User;
 }
 
-
 // --- Orders ---
-export const getOrders = (): Order[] => getFromStorage(ORDERS_KEY, defaultOrders);
-export const saveOrders = (orders: Order[]) => setToStorage(ORDERS_KEY, orders);
-
-export const addOrder = (order: Order): Order => {
-    const orders = getOrders();
-    const updatedOrders = [order, ...orders];
-    saveOrders(updatedOrders);
-    return order;
+export const getOrders = async (): Promise<Order[]> => {
+    const ordersCol = collection(db, ORDERS_COLLECTION);
+    const orderSnapshot = await getDocs(ordersCol);
+    const orders = orderSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+    return orders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 };
 
-export const updateOrderStatus = (orderId: string, status: OrderStatus): Order | undefined => {
-    const orders = getOrders();
-    const orderIndex = orders.findIndex(o => o.id === orderId);
-    if (orderIndex > -1) {
-        orders[orderIndex].status = status;
-        saveOrders(orders);
-        
-        fetch('/api/webhook/order-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId, newStatus: status }),
-        }).catch(error => console.error('Failed to call webhook', error));
+export const addOrder = async (order: NewOrder): Promise<Order> => {
+    const ordersCol = collection(db, ORDERS_COLLECTION);
+    const docRef = await addDoc(ordersCol, order);
+    return { ...order, id: docRef.id };
+};
 
-        return orders[orderIndex];
-    }
-    return undefined;
+export const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<Order | undefined> => {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    await updateDoc(orderRef, { status: status });
+    
+    fetch('/api/webhook/order-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, newStatus: status }),
+    }).catch(error => console.error('Failed to call webhook', error));
+
+    const orders = await getOrders();
+    return orders.find(o => o.id === orderId);
 };
 
 
 // --- Locations ---
-export const getLocations = (): Location[] => getFromStorage(LOCATIONS_KEY, defaultLocations);
+export const getLocations = async (): Promise<Location[]> => {
+    const locationsCol = collection(db, LOCATIONS_COLLECTION);
+    const locationSnapshot = await getDocs(locationsCol);
+    return locationSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Location));
+};

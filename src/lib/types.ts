@@ -7,6 +7,8 @@ export interface User {
   role: 'customer' | 'admin';
 }
 
+export type NewUser = Omit<User, 'id'>;
+
 export interface Product {
   id: string;
   name:string;
@@ -34,6 +36,8 @@ export interface Order {
   deliveryAddress: string;
   sourceStoreId?: string;
 }
+
+export type NewOrder = Omit<Order, 'id'>;
 
 export interface Location {
     id: string;

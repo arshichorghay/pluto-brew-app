@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, useMapsLibrary, Pin } from "@vis.gl/react-google-maps";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,26 +36,30 @@ function MapControl({ onLocationChange }: MapControlProps) {
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<LocationType | null>(null);
   const [deliverySource, setDeliverySource] = useState<LocationType | null>(null);
   
-  useEffect(() => {
-    const locations = getLocations();
-    setAllLocations(locations);
-    if (locations.length > 0) {
-      setSelectedPickupLocation(locations[0]);
-      setDeliverySource(locations[0]);
-    }
-  }, []);
-  
   const [deliveryPin, setDeliveryPin] = useState<{lat: number; lng: number} | null>(null);
   const [address, setAddress] = useState("");
   const [latInput, setLatInput] = useState("");
   const [lngInput, setLngInput] = useState("");
-  const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 }); // Default to Karlsruhe
+  const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
   
   const placesLib = useMapsLibrary('places');
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchLocations = async () => {
+      const locations = await getLocations();
+      setAllLocations(locations);
+      if (locations.length > 0) {
+        setSelectedPickupLocation(locations[0]);
+        setDeliverySource(locations[0]);
+        setMapCenter({ lat: locations[0].lat, lng: locations[0].lng });
+      }
+    };
+    fetchLocations();
+  }, []);
+  
   useEffect(() => {
     if (deliveryType === 'pickup') {
       if (selectedPickupLocation) {
@@ -83,12 +87,6 @@ function MapControl({ onLocationChange }: MapControlProps) {
         types: ["address"],
     });
     setAutocomplete(autocompleteService);
-
-    return () => {
-        if (autocomplete) {
-          google.maps.event.clearInstanceListeners(autocomplete);
-        }
-    }
   }, [placesLib]);
 
 
@@ -115,7 +113,10 @@ function MapControl({ onLocationChange }: MapControlProps) {
     });
 
     return () => {
-        placeChangedListener.remove();
+        if (google?.maps?.event) {
+            google.maps.event.clearInstanceListeners(autocomplete);
+        }
+        placeChangedListener?.remove();
     };
   }, [autocomplete, toast]);
 
@@ -241,9 +242,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
               <AdvancedMarker 
                   position={deliveryPin} 
                   title={"Your Delivery Location"}
-              >
-                  <span className="text-3xl">📍</span>
-              </AdvancedMarker>
+              />
             )}
           </Map>
         </div>
@@ -256,7 +255,6 @@ function MapControl({ onLocationChange }: MapControlProps) {
                         id="address-search" 
                         ref={addressInputRef}
                         placeholder="Start typing your delivery address..."
-                        defaultValue={address}
                     />
                 </div>
 

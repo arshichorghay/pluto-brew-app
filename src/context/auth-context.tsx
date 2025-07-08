@@ -1,10 +1,9 @@
 
 "use client";
 
-import type { User } from "@/lib/types";
+import type { User, NewUser } from "@/lib/types";
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { v4 as uuidv4 } from 'uuid';
-import { addUser, findUserByCredentials, getUsers } from "@/lib/storage";
+import { addUser, findUserByCredentials } from "@/lib/storage";
 
 interface AuthContextType {
   user: User | null;
@@ -26,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password?: string): Promise<User | null> => {
-    const foundUser = findUserByCredentials(email, password);
+    const foundUser = await findUserByCredentials(email, password);
     if (foundUser) {
       setUser(foundUser);
       sessionStorage.setItem("pluto-brew-user", JSON.stringify(foundUser));
@@ -41,14 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (name: string, email: string, password?: string): Promise<User | null> => {
-    const users = getUsers();
-    if (users.some(u => u.email === email)) {
-        console.error("User already exists");
-        return null;
-    }
-
-    const newUser: User = {
-        id: uuidv4(),
+    const newUser: NewUser = {
         name,
         email,
         password,
@@ -56,10 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-        addUser(newUser);
-        setUser(newUser);
-        sessionStorage.setItem("pluto-brew-user", JSON.stringify(newUser));
-        return newUser;
+        const registeredUser = await addUser(newUser);
+        setUser(registeredUser);
+        sessionStorage.setItem("pluto-brew-user", JSON.stringify(registeredUser));
+        return registeredUser;
     } catch (error) {
         console.error("Registration failed:", error);
         return null;

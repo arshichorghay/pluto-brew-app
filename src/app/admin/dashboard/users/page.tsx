@@ -21,12 +21,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { User } from "@/lib/types";
 import { getUsers } from "@/lib/storage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setUsers(getUsers());
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      setUsers(await getUsers());
+      setIsLoading(false);
+    };
+    fetchUsers();
   }, []);
 
   return (
@@ -53,18 +60,29 @@ export default function AdminUsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
-                </TableCell>
-                <TableCell>
-                    <Button variant="outline" size="sm">Edit</Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-16" /></TableCell>
+                </TableRow>
+              ))
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{user.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                      <Button variant="outline" size="sm">Edit</Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </CardContent>

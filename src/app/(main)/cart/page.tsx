@@ -12,7 +12,7 @@ import { LocationSelector } from "@/components/location-selector";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { LocationInfo, Order } from "@/lib/types";
+import type { LocationInfo, NewOrder } from "@/lib/types";
 import { useAuth } from "@/context/auth-context";
 import { mockProducts } from "@/lib/mock-data-defaults";
 import { addOrder } from "@/lib/storage";
@@ -27,7 +27,7 @@ export default function CartPage() {
   const shippingFee = (locationInfo?.type === 'delivery' && cartTotal > 0) ? 5.00 : 0;
   const total = cartTotal + shippingFee;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!user) {
         toast({
             variant: "destructive",
@@ -53,8 +53,7 @@ export default function CartPage() {
       return;
     }
 
-    const newOrder: Order = {
-        id: `PB-${Math.floor(Math.random() * 9000) + 1000}`,
+    const newOrder: NewOrder = {
         userId: user.id,
         items: cartItems,
         total: total,
@@ -64,17 +63,17 @@ export default function CartPage() {
         sourceStoreId: locationInfo.location.id,
     };
 
-    addOrder(newOrder);
+    const placedOrder = await addOrder(newOrder);
 
     toast({
         title: "Order Placed!",
-        description: `Your order #${newOrder.id} has been successfully placed.`,
+        description: `Your order #${placedOrder.id} has been successfully placed.`,
     });
     clearCart();
     router.push('/orders');
   }
 
-  const handleDemoOrder = () => {
+  const handleDemoOrder = async () => {
     if (!user) {
         toast({
             variant: "destructive",
@@ -89,8 +88,7 @@ export default function CartPage() {
     ];
     const demoTotal = demoItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-    const demoOrder: Order = {
-        id: `PB-DEMO-${Math.floor(Math.random() * 1000)}`,
+    const demoOrder: NewOrder = {
         userId: user.id,
         items: demoItems,
         total: demoTotal,
@@ -100,8 +98,8 @@ export default function CartPage() {
         sourceStoreId: '1',
     };
 
-    addOrder(demoOrder);
-    toast({ title: "Demo Order Created!", description: `Order #${demoOrder.id} has been added to your orders.` });
+    const placedOrder = await addOrder(demoOrder);
+    toast({ title: "Demo Order Created!", description: `Order #${placedOrder.id} has been added to your orders.` });
     router.push('/orders');
   };
 
