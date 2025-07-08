@@ -25,26 +25,24 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
-      <CardHeader className="p-0">
+       <CardHeader className="p-0 relative">
         <Link href={`/products/${product.id}`}>
           <Image
             alt={product.name}
-            className="aspect-video w-full object-cover"
-            height={225}
-            src={product.imageUrl || 'https://placehold.co/400x225.png'}
+            className="aspect-square w-full object-cover"
+            height={400}
+            src={product.imageUrl || 'https://placehold.co/400x400.png'}
             width={400}
             data-ai-hint={product['data-ai-hint']}
           />
         </Link>
+        <Badge variant="secondary" className="absolute top-3 right-3">{product.category}</Badge>
       </CardHeader>
-      <CardContent className="p-4 flex-grow flex flex-col">
-          <div className="mb-2">
-              <Badge variant="secondary">{product.category}</Badge>
-          </div>
-          <CardTitle className="text-xl font-headline mb-2">
-              <Link href={`/products/${product.id}`}>{product.name}</Link>
-          </CardTitle>
-          <CardDescription className="text-sm flex-grow">{product.description}</CardDescription>
+      <CardContent className="p-4 flex-grow">
+        <CardTitle className="text-xl font-headline mb-2">
+            <Link href={`/products/${product.id}`}>{product.name}</Link>
+        </CardTitle>
+        <CardDescription className="text-sm">{product.description}</CardDescription>
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <div className="text-lg font-semibold">€{product.price.toFixed(2)}</div>
