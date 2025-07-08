@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,7 +18,6 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
     AlertDialog,
@@ -35,8 +34,7 @@ import { updateUser } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { type SavedAddress } from '@/lib/types';
 import { Home, Briefcase, PlusCircle, MapPin, Trash2, Edit } from 'lucide-react';
-import { AddressPicker } from './address-picker';
-import { APIProvider } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 
@@ -77,7 +75,6 @@ export function ManageAddressesCard() {
         
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            // This is a way to refresh the user state in the context
             await login(user.email, user.password);
             toast({ title: "Address Deleted", description: `The address "${addressToDelete.alias}" was removed.` });
         } catch (error) {
@@ -93,18 +90,17 @@ export function ManageAddressesCard() {
 
         let updatedAddresses: SavedAddress[];
         
-        if (addressToEdit) { // Editing existing address
+        if (addressToEdit) { 
             updatedAddresses = user.savedAddresses?.map(a => 
                 a.id === addressToEdit.id ? { ...formData, id: a.id } : a
             ) || [];
-        } else { // Adding new address
+        } else {
             const newAddress: SavedAddress = { ...formData, id: `addr_${Date.now()}`};
             updatedAddresses = [...(user.savedAddresses || []), newAddress];
         }
 
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            // Re-login to refresh user data in context
             await login(user.email, user.password);
             toast({ title: "Address Saved", description: "Your address list has been updated." });
             setIsFormOpen(false);
@@ -115,7 +111,7 @@ export function ManageAddressesCard() {
     
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-    if (!apiKey) return null; // Or show an error
+    if (!apiKey) return null;
 
     return (
         <Card>
@@ -153,7 +149,7 @@ export function ManageAddressesCard() {
                     <DialogHeader>
                         <DialogTitle>{addressToEdit ? 'Edit' : 'Add'} Address</DialogTitle>
                     </DialogHeader>
-                    <APIProvider apiKey={apiKey}>
+                    <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
                         <AddressForm 
                             onSave={handleFormSave} 
                             onCancel={() => setIsFormOpen(false)}
@@ -190,12 +186,116 @@ interface AddressFormProps {
 
 function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
     const [alias, setAlias] = useState(initialData?.alias || '');
-    const [location, setLocation] = useState<{ address: string; lat: number; lng: number } | null>(initialData ? { address: initialData.address, lat: initialData.lat, lng: initialData.lng } : null);
+
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData || null);
+    const [address, setAddress] = useState<string>(initialData?.address || "");
+    const [latInput, setLatInput] = useState<string>(initialData?.lat.toString() || "");
+    const [lngInput, setLngInput] = useState<string>(initialData?.lng.toString() || "");
+    const [mapCenter, setMapCenter] = useState(initialData || { lat: 49.0069, lng: 8.4037 });
+    
+    const placesLib = useMapsLibrary('places');
+    const geocodingLib = useMapsLibrary('geocoding');
+    const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+    const { toast } = useToast();
+
+    const updateLocationState = useCallback((newPin: { lat: number; lng: number }, newAddress: string) => {
+        setPin(newPin);
+        setMapCenter(newPin);
+        setAddress(newAddress);
+        setLatInput(newPin.lat.toString());
+        setLngInput(newPin.lng.toString());
+        if (inputRef.current) {
+            inputRef.current.value = newAddress;
+        }
+    }, []);
+
+    useEffect(() => {
+        if(geocodingLib) {
+            setGeocoder(new geocodingLib.Geocoder());
+        }
+    }, [geocodingLib]);
+
+    useEffect(() => {
+        if (!placesLib || !inputRef.current) return;
+        
+        const kitCampusCenter = { lat: 49.00937, lng: 8.41656 };
+        const autocomplete = new placesLib.Autocomplete(inputRef.current, {
+            fields: ["place_id", "name", "formatted_address", "geometry"],
+            locationBias: { center: kitCampusCenter, radius: 5000 },
+            strictBounds: false,
+        });
+
+        const listener = autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place?.geometry?.location && place.formatted_address) {
+                const newPin = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                };
+                updateLocationState(newPin, place.formatted_address);
+                toast({ title: 'Location Found', description: `Pin set for ${place.formatted_address}` });
+            }
+        });
+
+        return () => {
+            listener.remove();
+            if (inputRef.current) {
+                google.maps.event.clearInstanceListeners(inputRef.current);
+            }
+            const pacContainers = document.querySelectorAll('.pac-container');
+            pacContainers.forEach(container => container.remove());
+        };
+    }, [placesLib, toast, updateLocationState]);
+    
+    useEffect(() => {
+        if (inputRef.current && initialData?.address) {
+            inputRef.current.value = initialData.address;
+        }
+    }, [initialData]);
+
+    const handleCoordinateSet = () => {
+        const lat = parseFloat(latInput);
+        const lng = parseFloat(lngInput);
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            toast({ variant: 'destructive', title: 'Invalid Coordinates', description: 'Please enter valid latitude and longitude.' });
+            return;
+        }
+        const newPin = { lat, lng };
+        if (geocoder) {
+            geocoder.geocode({ location: newPin }, (results, status) => {
+                 if (status === 'OK' && results?.[0]) {
+                    updateLocationState(newPin, results[0].formatted_address);
+                 } else {
+                    const newAddressStr = `Lat: ${lat}, Lng: ${lng}`;
+                    updateLocationState(newPin, newAddressStr);
+                 }
+                 toast({ title: 'Location Set', description: `Pin set to Lat: ${lat}, Lng: ${lng}` });
+            });
+        }
+    };
+
+    const handleMapClick = (e: google.maps.MapMouseEvent) => {
+        if (!e.latLng || !geocoder) return;
+        
+        const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+        
+        geocoder.geocode({ location: e.latLng }, (results, status) => {
+            if (status === 'OK' && results?.[0]) {
+                updateLocationState(newPin, results[0].formatted_address);
+                toast({ title: "Location Set", description: `Delivery address updated.` });
+            } else {
+                const newAddressStr = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
+                updateLocationState(newPin, newAddressStr);
+                toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
+            }
+        });
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (alias && location) {
-            onSave({ alias, ...location });
+        if (alias && address && pin) {
+            onSave({ alias, address, lat: pin.lat, lng: pin.lng });
         }
     };
     
@@ -208,12 +308,57 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                 </div>
                 <div>
                     <Label>Location</Label>
-                    <AddressPicker onLocationSelect={setLocation} initialLocation={initialData ? {address: initialData.address, lat: initialData.lat, lng: initialData.lng} : undefined} />
+                    <div className="grid gap-4 pt-2">
+                        <div className="h-[250px] w-full rounded-md overflow-hidden border">
+                            <Map
+                                center={mapCenter}
+                                zoom={13}
+                                mapId="address_picker_map_dialog"
+                                gestureHandling={'greedy'}
+                                onClick={handleMapClick}
+                                clickableIcons={false}
+                            >
+                                {pin && <AdvancedMarker position={pin} title={"Selected Location"} />}
+                            </Map>
+                        </div>
+                        
+                        <div className="grid gap-2">
+                            <Label htmlFor="address-search-dialog">Search for delivery address</Label>
+                            <Input 
+                                id="address-search-dialog" 
+                                ref={inputRef}
+                                placeholder="Search for a place or address..."
+                                defaultValue={initialData?.address || ''}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                            <div className="grid gap-2">
+                                <Label htmlFor="lat-input-dialog">Latitude</Label>
+                                <Input 
+                                    id="lat-input-dialog" 
+                                    placeholder="e.g., 49.0093"
+                                    value={latInput}
+                                    onChange={(e) => setLatInput(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="lng-input-dialog">Longitude</Label>
+                                <Input 
+                                    id="lng-input-dialog" 
+                                    placeholder="e.g., 8.4044"
+                                    value={lngInput}
+                                    onChange={(e) => setLngInput(e.target.value)}
+                                />
+                            </div>
+                            <Button type="button" onClick={handleCoordinateSet} className="w-full">Set from Coords</Button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <DialogFooter>
                 <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-                <Button type="submit" disabled={!alias || !location}>Save Address</Button>
+                <Button type="submit" disabled={!alias || !address || !pin}>Save Address</Button>
             </DialogFooter>
         </form>
     )
