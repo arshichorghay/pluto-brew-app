@@ -6,7 +6,7 @@ import { Icons } from "@/components/icons";
 export default function Home() {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12">
+      <div className="flex h-full items-center justify-center p-6">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
             <Icons.logo className="h-12 w-12 mx-auto" />
@@ -32,7 +32,7 @@ export default function Home() {
       <div className="hidden bg-muted lg:block">
         <Image
           src="https://placehold.co/1080x1080.png"
-          alt="Image of beer"
+          alt="A vibrant brewery interior with large copper vats."
           data-ai-hint="beer brewery"
           width="1080"
           height="1080"
