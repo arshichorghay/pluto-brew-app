@@ -1,35 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { Progress } from '@/components/ui/progress';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from './ui/button';
+import { useRouter } from 'next/navigation';
 
 const SESSION_DURATION_SECONDS = 30 * 60; // 30 minutes
+const WARNING_TIME_SECONDS = 60; // 1 minute warning
 
 export function SessionTimer() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const router = useRouter();
     const [secondsLeft, setSecondsLeft] = useState(SESSION_DURATION_SECONDS);
+    const [showWarning, setShowWarning] = useState(false);
+
+    const resetTimer = useCallback(() => {
+        setSecondsLeft(SESSION_DURATION_SECONDS);
+        setShowWarning(false);
+    }, []);
+
+    const handleLogoutClick = useCallback(() => {
+        setShowWarning(false);
+        logout();
+        router.push('/');
+    }, [logout, router]);
 
     useEffect(() => {
         if (!user) {
-            setSecondsLeft(SESSION_DURATION_SECONDS);
+            resetTimer();
             return;
         }
-
-        setSecondsLeft(SESSION_DURATION_SECONDS);
 
         const timer = setInterval(() => {
             setSecondsLeft(prev => {
                 if (prev <= 1) {
                     clearInterval(timer);
+                    handleLogoutClick();
                     return 0;
+                }
+                if (prev - 1 <= WARNING_TIME_SECONDS) {
+                    setShowWarning(true);
                 }
                 return prev - 1;
             });
         }, 1000);
 
-        return () => clearInterval(timer);
-    }, [user]);
+        // Reset timer on user activity
+        const handleActivity = () => {
+          resetTimer();
+        };
+
+        window.addEventListener('mousemove', handleActivity);
+        window.addEventListener('keydown', handleActivity);
+        window.addEventListener('click', handleActivity);
+
+        // Cleanup function
+        return () => {
+          clearInterval(timer);
+          window.removeEventListener('mousemove', handleActivity);
+          window.removeEventListener('keydown', handleActivity);
+          window.removeEventListener('click', handleActivity);
+        };
+    }, [user, resetTimer, handleLogoutClick]);
+
 
     if (!user) {
         return null;
@@ -38,8 +80,24 @@ export function SessionTimer() {
     const progressPercentage = (secondsLeft / SESSION_DURATION_SECONDS) * 100;
 
     return (
-        <div className="fixed top-0 left-0 w-full z-[100]">
-            <Progress value={progressPercentage} className="h-1 w-full rounded-none" />
-        </div>
+        <>
+            <div className="fixed top-0 left-0 w-full z-[100]">
+                <Progress value={progressPercentage} className="h-1 w-full rounded-none" />
+            </div>
+            <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you still there?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your session will expire in {secondsLeft} seconds due to inactivity.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <Button variant="outline" onClick={handleLogoutClick}>Log Out</Button>
+                        <Button onClick={resetTimer}>Stay Logged In</Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
