@@ -1,4 +1,3 @@
-
 # Pluto Brew - A Firebase Studio Project
 
 This is a Next.js starter project for a craft beer marketplace called "Pluto Brew", created in Firebase Studio. It features a customer-facing marketplace and an admin dashboard for managing products, orders, users, and locations.
@@ -13,66 +12,9 @@ This is a Next.js starter project for a craft beer marketplace called "Pluto Bre
 - **File Uploads:** Local file uploads for product images to the `/public` directory.
 - **Responsive Design:** Works on desktop and mobile browsers.
 
-## Deployment: Step-by-Step Guide
+## Deployment
 
-This application is pre-configured for deployment with **Firebase Hosting**. Follow these steps to get your site live on the internet.
-
-### Prerequisites
-
-*   A [Firebase](https://console.firebase.google.com/) account.
-*   The Firebase CLI installed on your machine: `npm install -g firebase-tools`.
-*   A Google Cloud account to get a Google Maps API Key.
-
-### Step 1: Set Up Environment Variables
-
-This project requires API keys to connect to Firebase and Google Maps.
-
-1.  **Create the file:** In the root of the project, create a new file named `.env.local`.
-2.  **Copy the template:** Copy the contents of the `.env.example` file and paste them into your new `.env.local` file.
-3.  **Fill in the values:**
-    *   Find your Firebase credentials in your **Firebase Project Settings** > **General**.
-    *   Find your Google Maps API key in the **Google Cloud Console**. You will need to enable the "Maps JavaScript API" and "Places API" for your project.
-    *   Fill in the placeholder values in `.env.local` with your actual keys. The `.gitignore` file is already configured to keep this file from being committed to your repository.
-
-### Step 2: Create a Firebase Project
-
-1.  Go to the [Firebase Console](https://console.firebase.google.com/).
-2.  Click **"Add project"** and give your project a name (e.g., `pluto-brew-app`).
-3.  Continue through the setup steps. You can disable Google Analytics for this project if you don't need it.
-4.  Once created, **upgrade your project to the "Blaze" (Pay-as-you-go) plan.** This step is necessary to enable the underlying Cloud Functions that power a dynamic Next.js application. Firebase provides a generous free tier for these services, so you are unlikely to incur any costs for a small to medium-sized application. You can set budget alerts in your Google Cloud project to avoid any unexpected charges.
-
-### Step 3: Connect Your Local Project to Firebase
-
-1.  **Login to Firebase:** In your project terminal, run the following command and follow the prompts to log in to your Google account:
-    ```bash
-    firebase login
-    ```
-2.  **Set the Project:** This project includes a `.firebaserc` file. Open it and change the `default` project ID from `pluto-brew-app` to your actual Firebase Project ID. You can find this in your Firebase Project Settings.
-    ```json
-    {
-      "projects": {
-        "default": "YOUR-FIREBASE-PROJECT-ID"
-      }
-    }
-    ```
-
-### Step 4: Deploy to Firebase Hosting
-
-1.  **Run Locally (Optional):** To test before deploying, make sure you have your `.env.local` file set up, then run:
-    ```bash
-    npm install
-    npm run dev
-    ```
-2.  **Build the Project:** Create a production build of your Next.js application:
-    ```bash
-    npm run build
-    ```
-3.  **Deploy:** Now, deploy the project to Firebase Hosting:
-    ```bash
-    firebase deploy --only hosting
-    ```
-
-That's it! The Firebase CLI will build and deploy your Next.js app. When it's finished, it will provide you with a live, public URL for your website. Every time you want to update your live site, just run `npm run build` and `firebase deploy --only hosting` again.
+This application is pre-configured for deployment with **Firebase Hosting**. For a complete step-by-step guide, please see the **[DEPLOYMENT.md](./DEPLOYMENT.md)** file.
 
 ## Mobile Access
 
