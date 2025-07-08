@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,38 +28,43 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 const AutocompleteInput = ({ onPlaceSelect }: { onPlaceSelect: (place: google.maps.places.PlaceResult) => void }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const places = useMapsLibrary('places');
-    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
     useEffect(() => {
         if (!places || !inputRef.current) {
             return;
         }
 
-        const kitCampusCenter = { lat: 49.00937, lng: 8.41656 };
-
-        if (!autocompleteRef.current) {
-            autocompleteRef.current = new places.Autocomplete(inputRef.current, {
-                fields: ["geometry", "formatted_address", "name"],
-                // Bias search results to the Karlsruhe area around KIT
-                locationBias: {
-                    center: kitCampusCenter,
-                    radius: 5000, // 5km radius
-                },
-                strictBounds: false, // Allow searching outside the biased area
-            });
+        if (inputRef.current.getAttribute('data-autocomplete-initialized')) {
+            return;
         }
+
+        const kitCampusCenter = { lat: 49.00937, lng: 8.41656 };
         
-        const listener = autocompleteRef.current.addListener('place_changed', () => {
-            const place = autocompleteRef.current?.getPlace();
-            if (place) {
+        const autocomplete = new places.Autocomplete(inputRef.current, {
+            fields: ["place_id", "name", "formatted_address", "geometry", "types"],
+            locationBias: {
+                center: kitCampusCenter,
+                radius: 5000,
+            },
+            strictBounds: false,
+        });
+        
+        inputRef.current.setAttribute('data-autocomplete-initialized', 'true');
+        
+        const listener = autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place && place.geometry) {
                 onPlaceSelect(place);
             }
         });
 
         return () => {
-            if (listener) {
-                listener.remove();
+            if (inputRef.current) {
+                inputRef.current.removeAttribute('data-autocomplete-initialized');
             }
+            google.maps.event.clearInstanceListeners(autocomplete);
+            const pacContainers = document.querySelectorAll('.pac-container');
+            pacContainers.forEach(container => container.remove());
         };
     }, [places, onPlaceSelect]);
     
@@ -67,7 +72,7 @@ const AutocompleteInput = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
         <Input 
             id="address-search" 
             ref={inputRef}
-            placeholder="Start typing your delivery address..."
+            placeholder="Search for a place or address..."
         />
     );
 };
@@ -88,7 +93,6 @@ function MapControl({ onLocationChange }: {onLocationChange: (location: Location
   const geocodingLib = useMapsLibrary('geocoding');
   const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
   const { toast } = useToast();
-  const autocompleteInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if(geocodingLib) {
@@ -128,7 +132,7 @@ function MapControl({ onLocationChange }: {onLocationChange: (location: Location
     }
   }, [deliveryType, selectedPickupLocation, address, deliveryPin, deliverySource, onLocationChange]);
 
-  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
+  const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult) => {
     if (place.geometry?.location) {
         const newPin = {
             lat: place.geometry.location.lat(),
@@ -142,8 +146,6 @@ function MapControl({ onLocationChange }: {onLocationChange: (location: Location
         setLatInput(newPin.lat.toString());
         setLngInput(newPin.lng.toString());
         
-        // This is a bit of a hack to update the underlying input of the Autocomplete component
-        // which is not directly exposed. We can't use the ref from AutocompleteInput here.
         const inputElement = document.getElementById('address-search') as HTMLInputElement;
         if (inputElement) {
           inputElement.value = formattedAddress;
@@ -151,7 +153,7 @@ function MapControl({ onLocationChange }: {onLocationChange: (location: Location
 
         toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
     }
-  };
+  }, [toast]);
 
   const handleCoordinateSet = () => {
     const lat = parseFloat(latInput);
