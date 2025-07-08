@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense } from 'react';
 import { CartView } from '@/components/cart-view';
 import { Skeleton } from '@/components/ui/skeleton';

@@ -3,7 +3,7 @@
 
 import type { User, NewUser } from "@/lib/types";
 import { createContext, useContext, useState, useEffect, type ReactNode, useRef, useCallback } from "react";
-import { addUser, findUserByCredentials, getUserById } from "@/lib/storage";
+import { addUser, findUserByCredentials, getUserById, seedDatabase } from "@/lib/storage";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -49,19 +49,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, INACTIVITY_TIMEOUT);
   }, [logout, toast]);
 
-  // Effect to load user from localStorage on initial load
+  // Effect to seed database and load user from localStorage on initial load
   useEffect(() => {
-    try {
+    const initializeApp = async () => {
+      setIsLoading(true);
+      await seedDatabase();
+      
+      try {
         const storedUser = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+          setUser(JSON.parse(storedUser));
         }
-    } catch (e) {
-        console.error("Failed to parse user from localStorage", e);
+      } catch (e) {
+        console.error("Failed to parse user from localStorage, clearing.", e);
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
         setUser(null);
-    } finally {
+      } finally {
         setIsLoading(false);
-    }
+      }
+    };
+    
+    initializeApp();
   }, []);
   
   // Effect to handle user activity and inactivity timeout

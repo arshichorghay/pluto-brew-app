@@ -40,7 +40,7 @@ const seedCollection = async <T extends {id: string}>(collectionName: string, de
 
 
 // Seed all necessary collections
-const seedDatabase = async () => {
+export const seedDatabase = async () => {
     try {
         await Promise.all([
             seedCollection<User>(USERS_COLLECTION, defaultUsers),
@@ -52,10 +52,6 @@ const seedDatabase = async () => {
         console.error("Error seeding database: ", e);
     }
 };
-
-// Removed automatic seeding call to prevent build issues.
-// The database is already seeded from the mock data defaults.
-// seedDatabase();
 
 // --- Users ---
 export const getUsers = async (): Promise<User[]> => {
