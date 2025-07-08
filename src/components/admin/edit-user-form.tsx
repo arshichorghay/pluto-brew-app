@@ -39,6 +39,7 @@ const userFormSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
   role: z.enum(['admin', 'customer']),
+  password: z.string().optional(),
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -56,9 +57,10 @@ export function EditUserForm({ user, isOpen, onOpenChange, onUserUpdate }: EditU
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      role: user?.role || 'customer',
+      name: '',
+      email: '',
+      role: 'customer',
+      password: '',
     },
   });
 
@@ -69,6 +71,7 @@ export function EditUserForm({ user, isOpen, onOpenChange, onUserUpdate }: EditU
         name: user.name,
         email: user.email,
         role: user.role,
+        password: '', // Always start with an empty password field
       });
     }
   }, [user, form]);
@@ -125,6 +128,19 @@ export function EditUserForm({ user, isOpen, onOpenChange, onUserUpdate }: EditU
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input placeholder="user@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>New Password (optional)</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Leave blank to keep current" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

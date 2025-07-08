@@ -8,7 +8,7 @@ export interface User {
 }
 
 export type NewUser = Omit<User, 'id'>;
-export type UpdateUser = Partial<Omit<User, 'id' | 'password'>>;
+export type UpdateUser = Partial<Omit<User, 'id'>>;
 
 export interface Product {
   id: string;

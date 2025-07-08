@@ -9,7 +9,7 @@ import {
   doc,
   updateDoc,
   writeBatch,
-  setDoc,
+  getDoc,
 } from 'firebase/firestore';
 
 import type { User, Order, Location, OrderStatus, NewUser, NewOrder, Product, UpdateUser, UpdateProduct, UpdateLocation } from './types';
@@ -61,6 +61,16 @@ export const getUsers = async (): Promise<User[]> => {
     return userSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
 };
 
+export const getUserById = async (userId: string): Promise<User | null> => {
+    if (!userId) return null;
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    const docSnap = await getDoc(userRef);
+    if (docSnap.exists()) {
+        return { ...docSnap.data(), id: docSnap.id } as User;
+    }
+    return null;
+}
+
 export const addUser = async (user: NewUser): Promise<User> => {
     const usersCol = collection(db, USERS_COLLECTION);
      // Check if user already exists
@@ -86,7 +96,14 @@ export const findUserByCredentials = async (email: string, password?: string): P
 
 export const updateUser = async (userId: string, data: UpdateUser): Promise<void> => {
     const userRef = doc(db, USERS_COLLECTION, userId);
-    await updateDoc(userRef, data);
+    const updateData = { ...data };
+
+    // Do not update password if it's empty or undefined
+    if (!updateData.password) {
+        delete updateData.password;
+    }
+
+    await updateDoc(userRef, updateData);
 };
 
 // --- Products ---
@@ -108,6 +125,13 @@ export const getOrders = async (): Promise<Order[]> => {
     const orders = orderSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
     return orders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
 };
+
+export const getOrderById = async (orderId: string): Promise<Order | null> => {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const docSnap = await getDoc(orderRef);
+    return docSnap.exists() ? { ...docSnap.data(), id: docSnap.id } as Order : null;
+};
+
 
 export const addOrder = async (order: NewOrder): Promise<Order> => {
     const ordersCol = collection(db, ORDERS_COLLECTION);
@@ -132,7 +156,7 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus): P
 
 // --- Locations ---
 export const getLocations = async (): Promise<Location[]> => {
-    const locationsCol = collection(db, LOCATIONS_COLLECTION);
+    const locationsCol = collection(db, LOCATIONS_COLlection);
     const locationSnapshot = await getDocs(locationsCol);
     return locationSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Location));
 };

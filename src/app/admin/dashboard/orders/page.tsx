@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,6 +39,7 @@ export default function AdminOrdersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const router = useRouter();
 
     const fetchAllData = async () => {
         const [fetchedOrders, fetchedUsers] = await Promise.all([getOrders(), getUsers()]);
@@ -90,15 +92,14 @@ export default function AdminOrdersPage() {
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                        <TableCell className="flex gap-2">
+                        <TableCell>
                           <Skeleton className="h-9 w-[120px]" />
-                          <Skeleton className="h-9 w-16" />
                         </TableCell>
                     </TableRow>
                 ))
             ) : (
                 orders.map((order) => (
-                <TableRow key={order.id}>
+                <TableRow key={order.id} onClick={() => router.push(`/admin/dashboard/orders/${order.id}`)} className="cursor-pointer">
                     <TableCell className="font-medium">{order.id}</TableCell>
                     <TableCell>{getUserName(order.userId)}</TableCell>
                     <TableCell>{order.orderDate}</TableCell>
@@ -106,7 +107,7 @@ export default function AdminOrdersPage() {
                     <TableCell>
                         <OrderStatusBadge status={order.status}/>
                     </TableCell>
-                    <TableCell className="flex gap-2">
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                         <Select defaultValue={order.status} onValueChange={(value) => handleStatusChange(order.id, value as OrderStatus)}>
                             <SelectTrigger className="w-[120px] h-9">
                                 <SelectValue placeholder="Update..." />
@@ -117,7 +118,6 @@ export default function AdminOrdersPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" size="sm">View</Button>
                     </TableCell>
                 </TableRow>
                 ))
