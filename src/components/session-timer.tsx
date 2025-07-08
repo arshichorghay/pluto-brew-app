@@ -1,8 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -81,8 +81,11 @@ export function SessionTimer() {
 
     return (
         <>
-            <div className="fixed top-0 left-0 w-full z-[100] bg-red-500 h-2">
-                <Progress value={progressPercentage} className="h-full w-full rounded-none" />
+            <div className="fixed top-0 left-0 w-full z-[100] h-1 bg-muted">
+                <div
+                    className="h-full bg-primary transition-all duration-1000 ease-linear"
+                    style={{ width: `${progressPercentage}%` }}
+                />
             </div>
             <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
                 <AlertDialogContent>

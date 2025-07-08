@@ -35,7 +35,7 @@ export function AuthForm() {
     if (!isLoading && user) {
         // User is logged in, redirect them away from the auth page.
         if (user.role === 'admin') {
-          router.push("/admin/dashboard/orders");
+          router.push("/admin/orders");
         } else {
           router.push("/marketplace");
         }

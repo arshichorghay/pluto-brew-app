@@ -36,10 +36,10 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/admin/dashboard/orders", icon: ShoppingCart, label: "Orders" },
-    { href: "/admin/dashboard/products", icon: Package, label: "Products" },
-    { href: "/admin/dashboard/users", icon: Users, label: "Users" },
-    { href: "/admin/dashboard/locations", icon: MapPin, label: "Locations" },
+    { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
+    { href: "/admin/products", icon: Package, label: "Products" },
+    { href: "/admin/users", icon: Users, label: "Users" },
+    { href: "/admin/locations", icon: MapPin, label: "Locations" },
   ];
 
   return (
@@ -59,7 +59,7 @@ export default function AdminLayout({
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} className="w-full">
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
                     <item.icon />
