@@ -1,9 +1,23 @@
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { Icons } from "./icons";
 import { MainNav } from "./main-nav";
 import { HeaderSearch } from "./header-search";
 import { HeaderActions } from "./header-actions";
+import { Search } from "lucide-react";
+import { Skeleton } from "./ui/skeleton";
+
+function SearchBarFallback() {
+  return (
+    <div className="ml-auto flex-1 sm:flex-initial">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Skeleton className="h-10 pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]" />
+      </div>
+    </div>
+  );
+}
 
 export function Header() {
 
@@ -17,7 +31,9 @@ export function Header() {
         <div className="hidden md:block">
             <MainNav />
         </div>
-        <HeaderSearch />
+        <Suspense fallback={<SearchBarFallback />}>
+          <HeaderSearch />
+        </Suspense>
         <HeaderActions />
       </div>
     </header>
