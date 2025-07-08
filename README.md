@@ -1,3 +1,4 @@
+
 # Pluto Brew - A Firebase Studio Project
 
 This is a Next.js starter project for a craft beer marketplace called "Pluto Brew", created in Firebase Studio. It features a customer-facing marketplace and an admin dashboard for managing products, orders, users, and locations.
@@ -16,11 +17,15 @@ This is a Next.js starter project for a craft beer marketplace called "Pluto Bre
 
 To get started with development:
 
-1.  **Install dependencies:**
+1.  **Set Node Version:** This project requires Node.js v20 or higher. If you use `nvm`, simply run:
+    ```bash
+    nvm use
+    ```
+2.  **Install dependencies:**
     ```bash
     npm install
     ```
-2.  **Run the development server:**
+3.  **Run the development server:**
     ```bash
     npm run dev
     ```
@@ -28,54 +33,47 @@ To get started with development:
 
 ## Deployment: Step-by-Step Guide
 
-This application is pre-configured for deployment with **Firebase App Hosting**. Follow these steps to get your site live on the internet.
+This application is pre-configured for deployment with **Firebase Hosting**. Follow these steps to get your site live on the internet.
 
 ### Prerequisites
 
-*   A [GitHub](https://github.com/) account.
 *   A [Firebase](https://console.firebase.google.com/) account.
-*   `git` installed on your local machine.
+*   The Firebase CLI installed on your machine: `npm install -g firebase-tools`.
 
-### Step 1: Create a GitHub Repository
-
-1.  Go to [GitHub](https://github.com/new) and create a new repository. You can name it whatever you like (e.g., `pluto-brew-app`).
-2.  Keep it public or private, your choice. Do **not** initialize it with a README, .gitignore, or license file, as this project already has them.
-
-### Step 2: Push Your Code to GitHub
-
-1.  On the GitHub repository page, copy the repository URL. It will look something like `https://github.com/your-username/pluto-brew-app.git`.
-2.  In your local project terminal, initialize a git repository and push your code by running these commands one by one. **Replace the URL with your own repository URL.**
-
-    ```bash
-    git init -b main
-    git add -A
-    git commit -m "Initial commit"
-    git remote add origin https://github.com/your-username/pluto-brew-app.git
-    git push -u origin main
-    ```
-
-### Step 3: Create a Firebase Project
+### Step 1: Create a Firebase Project
 
 1.  Go to the [Firebase Console](https://console.firebase.google.com/).
-2.  Click **"Add project"** and give your project a name.
+2.  Click **"Add project"** and give your project a name (e.g., `pluto-brew-app`).
 3.  Continue through the setup steps. You can disable Google Analytics for this project if you don't need it.
+4.  Once created, **upgrade your project to the "Blaze" (Pay-as-you-go) plan.** This is required to deploy server-side rendered apps like this Next.js project. You still benefit from a generous free tier.
 
-### Step 4: Set up Firebase App Hosting
+### Step 2: Connect Your Local Project to Firebase
 
-1.  Once your Firebase project is created, navigate to the **Build** section in the left-hand menu and click on **App Hosting**.
-2.  Click the **"Get started"** button. This will begin the process of creating a "backend" for your app.
-3.  You will be prompted to connect to GitHub. Authorize Firebase to access your GitHub account.
-4.  Select the GitHub repository you created in Step 1.
-5.  Keep the default deployment branch as `main` and click **"Finish and deploy"**.
+1.  **Login to Firebase:** In your project terminal, run the following command and follow the prompts to log in to your Google account:
+    ```bash
+    firebase login
+    ```
+2.  **Set the Project:** This project includes a `.firebaserc` file. Open it and change the `default` project ID from `pluto-brew-app` to your actual Firebase Project ID. You can find this in your Firebase Project Settings.
+    ```json
+    {
+      "projects": {
+        "default": "YOUR-FIREBASE-PROJECT-ID"
+      }
+    }
+    ```
 
-### Step 5: Go Live!
+### Step 3: Deploy to Firebase Hosting
 
-That's it! Firebase App Hosting will now:
-*   Start building your Next.js application.
-*   Deploy it to its global content delivery network (CDN).
-*   Provide you with a live, public URL (e.g., `your-app.apphosting.dev` or `your-app.web.app`).
+1.  **Build the Project:** First, create a production build of your Next.js application:
+    ```bash
+    npm run build
+    ```
+2.  **Deploy:** Now, deploy the project to Firebase Hosting:
+    ```bash
+    firebase deploy --only hosting
+    ```
 
-You can see the deployment progress on the App Hosting dashboard. Once it's complete, you can visit the URL to see your live website. Every time you push a new change to your `main` branch on GitHub, a new deployment will automatically begin.
+That's it! The Firebase CLI will build and deploy your Next.js app. When it's finished, it will provide you with a live, public URL for your website. Every time you want to update your live site, just run `npm run build` and `firebase deploy --only hosting` again.
 
 ## Mobile Access
 
