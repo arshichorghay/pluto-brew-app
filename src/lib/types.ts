@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -38,4 +39,9 @@ export interface Location {
     name: string;
     lat: number;
     lng: number;
+}
+
+export interface LocationInfo {
+  type: 'pickup' | 'delivery';
+  address: string;
 }

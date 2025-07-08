@@ -2,6 +2,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -11,16 +12,18 @@ import { LocationSelector } from "@/components/location-selector";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import type { LocationInfo } from "@/lib/types";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart();
+  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
-  const shippingFee = cartTotal > 0 ? 5.00 : 0;
+  const shippingFee = (locationInfo?.type === 'delivery' && cartTotal > 0) ? 5.00 : 0;
   const total = cartTotal + shippingFee;
 
-  const handleDemoOrder = () => {
+  const handleCheckout = () => {
     if (cartItems.length === 0) {
       toast({
         variant: "destructive",
@@ -29,9 +32,18 @@ export default function CartPage() {
       });
       return;
     }
+    if (!locationInfo) {
+      toast({
+        variant: "destructive",
+        title: "No location selected!",
+        description: "Please select a pickup or delivery location.",
+      });
+      return;
+    }
+
     toast({
         title: "Demo Order Placed!",
-        description: "Your demo order has been successfully placed.",
+        description: `Your order for ${locationInfo.type} at ${locationInfo.address} has been successfully placed.`,
     });
     clearCart();
     router.push('/orders');
@@ -107,12 +119,11 @@ export default function CartPage() {
                         <p>${total.toFixed(2)}</p>
                     </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-2">
-                    <Button size="lg" className="w-full" disabled={cartItems.length === 0}>Proceed to Checkout</Button>
-                    <Button size="lg" variant="secondary" className="w-full" onClick={handleDemoOrder}>Place Demo Order</Button>
+                <CardFooter>
+                    <Button size="lg" className="w-full" disabled={cartItems.length === 0} onClick={handleCheckout}>Proceed to Checkout</Button>
                 </CardFooter>
             </Card>
-            <LocationSelector />
+            <LocationSelector onLocationChange={setLocationInfo} />
         </div>
       </div>
     </div>
