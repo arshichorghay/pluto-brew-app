@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { APIProvider, Map, AdvancedMarker, useMapsLibrary, Pin } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,8 +43,8 @@ function MapControl({ onLocationChange }: MapControlProps) {
   const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
   
   const placesLib = useMapsLibrary('places');
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,20 +82,16 @@ function MapControl({ onLocationChange }: MapControlProps) {
   useEffect(() => {
     if (!placesLib || !addressInputRef.current) return;
 
-    const autocompleteService = new placesLib.Autocomplete(addressInputRef.current, {
-        fields: ["geometry", "name", "formatted_address"],
-        types: ["address"],
-    });
-    setAutocomplete(autocompleteService);
-  }, [placesLib]);
+    if (!autocompleteRef.current) {
+        autocompleteRef.current = new placesLib.Autocomplete(addressInputRef.current, {
+            fields: ["geometry", "name", "formatted_address"],
+            types: ["address"],
+        });
+    }
 
-
-  useEffect(() => {
-    if (!autocomplete) return;
-
-    const placeChangedListener = autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.geometry?.location) {
+    const placeChangedListener = autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current?.getPlace();
+        if (place?.geometry?.location) {
             const newPin = {
                 lat: place.geometry.location.lat(),
                 lng: place.geometry.location.lng(),
@@ -113,12 +109,11 @@ function MapControl({ onLocationChange }: MapControlProps) {
     });
 
     return () => {
-        if (google?.maps?.event) {
-            google.maps.event.clearInstanceListeners(autocomplete);
+        if (google?.maps?.event && autocompleteRef.current) {
+            google.maps.event.clearInstanceListeners(autocompleteRef.current);
         }
-        placeChangedListener?.remove();
     };
-  }, [autocomplete, toast]);
+  }, [placesLib, toast]);
 
   const handleCoordinateSet = () => {
     const lat = parseFloat(latInput);
