@@ -121,17 +121,9 @@ export const uploadProductImage = async (file: File): Promise<string> => {
     return downloadURL;
 };
 
-export const updateProduct = async (productId: string, data: UpdateProduct, newImageFile?: File): Promise<void> => {
+export const updateProduct = async (productId: string, data: UpdateProduct): Promise<void> => {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId);
-    
-    const updateData = { ...data };
-
-    if (newImageFile) {
-        const newImageUrl = await uploadProductImage(newImageFile);
-        updateData.imageUrl = newImageUrl;
-    }
-
-    await updateDoc(productRef, updateData as any);
+    await updateDoc(productRef, data as any);
 };
 
 

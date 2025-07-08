@@ -13,7 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { updateProduct } from '@/lib/storage';
+import { updateProduct, uploadProductImage } from '@/lib/storage';
 import type { Product, UpdateProduct } from '@/lib/types';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -25,18 +25,7 @@ const productFormSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   stock: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   category: z.string().min(1, 'Category is required.'),
-  newImage: z
-    .any()
-    .optional()
-    .nullable()
-    .refine(
-      (file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE),
-      `Max file size is 5MB.`
-    )
-    .refine(
-      (file) => !file || (file instanceof File && ACCEPTED_IMAGE_TYPES.includes(file.type)),
-      'Only .jpg, .jpeg, .png and .webp formats are supported.'
-    ),
+  newImage: z.any().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -82,29 +71,47 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
     setIsSaving(true);
 
     try {
-      const newImageFile = data.newImage instanceof File ? data.newImage : undefined;
-      const productData: UpdateProduct = {
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        stock: data.stock,
-        category: data.category,
-      };
+        const productUpdateData: UpdateProduct = {
+            name: data.name,
+            description: data.description,
+            price: data.price,
+            stock: data.stock,
+            category: data.category,
+            imageUrl: product.imageUrl, // Start with the existing URL
+        };
 
-      await updateProduct(product.id, productData, newImageFile);
-      toast({
-        title: 'Product Updated',
-        description: `"${data.name}" has been successfully updated.`,
-      });
-      onProductUpdate();
-      onOpenChange(false);
+        const newImageFile = data.newImage;
+
+        // Check if a new file has actually been selected and is a File instance
+        if (newImageFile instanceof File) {
+            // Validate the file before uploading
+            if (newImageFile.size > MAX_FILE_SIZE) {
+                throw new Error('Max file size is 5MB.');
+            }
+            if (!ACCEPTED_IMAGE_TYPES.includes(newImageFile.type)) {
+                throw new Error('Only .jpg, .jpeg, .png and .webp formats are supported.');
+            }
+            
+            // Upload the new image and update the URL
+            productUpdateData.imageUrl = await uploadProductImage(newImageFile);
+        }
+
+        await updateProduct(product.id, productUpdateData);
+        
+        toast({
+            title: 'Product Updated',
+            description: `"${data.name}" has been successfully updated.`,
+        });
+        onProductUpdate();
+        onOpenChange(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      toast({
-        variant: 'destructive',
-        title: 'Error updating product',
-        description: `There was a problem saving the product information: ${errorMessage}`,
-      });
+        console.error("Detailed error updating product:", error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        toast({
+            variant: 'destructive',
+            title: 'Error updating product',
+            description: errorMessage,
+        });
     } finally {
         setIsSaving(false);
     }
