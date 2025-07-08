@@ -11,7 +11,7 @@ export function MainNav({
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   const routes = [
     { href: "/marketplace", label: "Marketplace", public: true },
@@ -25,7 +25,7 @@ export function MainNav({
       {...props}
     >
       {routes.map((route) => {
-        if (!route.public && (!user || (route.roles && !route.roles.includes(user.role)))) {
+        if (!route.public && (isLoading || !user || (route.roles && !route.roles.includes(user.role)))) {
           return null;
         }
         
