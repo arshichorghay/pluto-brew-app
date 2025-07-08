@@ -26,14 +26,56 @@ To get started with development:
     ```
     This will start the Next.js app on [http://localhost:3000](http://localhost:3000).
 
-## Deployment
+## Deployment: Step-by-Step Guide
 
-This application is pre-configured for deployment with **Firebase App Hosting**.
+This application is pre-configured for deployment with **Firebase App Hosting**. Follow these steps to get your site live on the internet.
 
-1.  **Connect to GitHub:** Create a repository on GitHub and push your code to it.
-2.  **Create a Firebase Project:** Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-3.  **Set up App Hosting:** In your Firebase project, go to the "App Hosting" section and follow the setup wizard to connect your GitHub repository.
-4.  **Deploy:** Once connected, every push to your main branch will automatically trigger a build and deploy your application. You will be given a public URL to access your live website.
+### Prerequisites
+
+*   A [GitHub](https://github.com/) account.
+*   A [Firebase](https://console.firebase.google.com/) account.
+*   `git` installed on your local machine.
+
+### Step 1: Create a GitHub Repository
+
+1.  Go to [GitHub](https://github.com/new) and create a new repository. You can name it whatever you like (e.g., `pluto-brew-app`).
+2.  Keep it public or private, your choice. Do **not** initialize it with a README, .gitignore, or license file, as this project already has them.
+
+### Step 2: Push Your Code to GitHub
+
+1.  On the GitHub repository page, copy the repository URL. It will look something like `https://github.com/your-username/pluto-brew-app.git`.
+2.  In your local project terminal, initialize a git repository and push your code by running these commands one by one. **Replace the URL with your own repository URL.**
+
+    ```bash
+    git init -b main
+    git add -A
+    git commit -m "Initial commit"
+    git remote add origin https://github.com/your-username/pluto-brew-app.git
+    git push -u origin main
+    ```
+
+### Step 3: Create a Firebase Project
+
+1.  Go to the [Firebase Console](https://console.firebase.google.com/).
+2.  Click **"Add project"** and give your project a name.
+3.  Continue through the setup steps. You can disable Google Analytics for this project if you don't need it.
+
+### Step 4: Set up Firebase App Hosting
+
+1.  Once your Firebase project is created, navigate to the **Build** section in the left-hand menu and click on **App Hosting**.
+2.  Click the **"Get started"** button. This will begin the process of creating a "backend" for your app.
+3.  You will be prompted to connect to GitHub. Authorize Firebase to access your GitHub account.
+4.  Select the GitHub repository you created in Step 1.
+5.  Keep the default deployment branch as `main` and click **"Finish and deploy"**.
+
+### Step 5: Go Live!
+
+That's it! Firebase App Hosting will now:
+*   Start building your Next.js application.
+*   Deploy it to its global content delivery network (CDN).
+*   Provide you with a live, public URL (e.g., `your-app.apphosting.dev` or `your-app.web.app`).
+
+You can see the deployment progress on the App Hosting dashboard. Once it's complete, you can visit the URL to see your live website. Every time you push a new change to your `main` branch on GitHub, a new deployment will automatically begin.
 
 ## Mobile Access
 
