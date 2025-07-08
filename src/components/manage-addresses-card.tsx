@@ -33,7 +33,7 @@ import { updateUser } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { type SavedAddress } from '@/lib/types';
 import { Home, Briefcase, PlusCircle, MapPin, Trash2, Edit } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 
@@ -186,34 +186,89 @@ interface AddressFormProps {
 }
 
 function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
-    const [alias, setAlias] = useState(initialData?.alias || '');
-    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData ? {lat: initialData.lat, lng: initialData.lng} : null);
-    const [address, setAddress] = useState<string>(initialData?.address || "");
-    const [mapCenter, setMapCenter] = useState(initialData || { lat: 49.0069, lng: 8.4037 });
-    
-    const { toast } = useToast();
-    const map = useMap();
+    const [alias, setAlias] = useState('');
+    const [address, setAddress] = useState('');
+    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
+    const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
 
-    const updateLocationState = useCallback((newPin: { lat: number; lng: number }, newAddress: string) => {
+    const placesLib = useMapsLibrary('places');
+    const geocodingLib = useMapsLibrary('geocoding');
+    const addressInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+    
+    useEffect(() => {
+        if (initialData) {
+            setAlias(initialData.alias);
+            setAddress(initialData.address);
+            const initialPin = { lat: initialData.lat, lng: initialData.lng };
+            setPin(initialPin);
+            setMapCenter(initialPin);
+            if (addressInputRef.current) {
+                addressInputRef.current.value = initialData.address;
+            }
+        } else {
+             // Reset form for "Add New"
+             setAlias('');
+             setAddress('');
+             setPin(null);
+             if (addressInputRef.current) {
+                 addressInputRef.current.value = '';
+             }
+        }
+    }, [initialData]);
+
+    useEffect(() => {
+        if (!placesLib || !addressInputRef.current) return;
+
+        const autocomplete = new placesLib.Autocomplete(addressInputRef.current, {
+            fields: ["geometry", "name", "formatted_address"],
+        });
+
+        const listener = autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (place?.geometry?.location) {
+                const newPin = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng(),
+                };
+                const formattedAddress = place.formatted_address || place.name || '';
+                setPin(newPin);
+                setAddress(formattedAddress);
+                if (addressInputRef.current) addressInputRef.current.value = formattedAddress;
+                setMapCenter(newPin);
+                toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
+            }
+        });
+
+        return () => {
+            google.maps.event.removeListener(listener);
+            if (addressInputRef.current) {
+                google.maps.event.clearInstanceListeners(addressInputRef.current);
+            }
+            const pacContainers = document.querySelectorAll('.pac-container');
+            pacContainers.forEach(c => c.remove());
+        };
+    }, [placesLib, toast]);
+
+    const handleMapClick = (e: google.maps.MapMouseEvent) => {
+        if (!geocodingLib || !e.latLng) return;
+
+        const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
         setPin(newPin);
         setMapCenter(newPin);
-        setAddress(newAddress);
-        if (map) map.panTo(newPin);
-    }, [map]);
+        const geocoder = new geocodingLib.Geocoder();
 
-    const handleMapClick = (e: google.maps.MapMouseEvent, geocoder: google.maps.Geocoder) => {
-        if (!e.latLng) return;
-        const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        
         geocoder.geocode({ location: e.latLng }, (results, status) => {
+            let newAddress = '';
             if (status === 'OK' && results?.[0]) {
-                updateLocationState(newPin, results[0].formatted_address);
-                toast({ title: "Location Set", description: `Address updated.` });
+                newAddress = results[0].formatted_address;
+                toast({ title: "Location Set", description: "Address updated." });
             } else {
-                const newAddressStr = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
-                updateLocationState(newPin, newAddressStr);
+                newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
                 toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
             }
+            setAddress(newAddress);
+            if (addressInputRef.current) addressInputRef.current.value = newAddress;
         });
     }
 
@@ -222,7 +277,7 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         if (alias && address && pin) {
             onSave({ alias, address, lat: pin.lat, lng: pin.lng });
         } else {
-          toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide an alias and select an address on the map.'})
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide an alias and select an address on the map.' });
         }
     };
     
@@ -240,30 +295,23 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                             <Map
                                 center={mapCenter}
                                 zoom={13}
-                                mapId="address_picker_map_dialog"
+                                mapId="address_form_map"
                                 gestureHandling={'greedy'}
-                                onClick={(e) => {
-                                  // Geocoder is loaded here to ensure it's available for the click event
-                                  const geocoder = new google.maps.Geocoder();
-                                  handleMapClick(e, geocoder);
-                                }}
+                                onClick={handleMapClick}
                                 clickableIcons={false}
                             >
                                 {pin && <AdvancedMarker position={pin} title={"Selected Location"} />}
                             </Map>
                         </div>
-                        <AddressSearchBox
-                          initialValue={address}
-                          onPlaceSelect={(place) => {
-                            if (place.geometry?.location) {
-                              const newPin = {
-                                  lat: place.geometry.location.lat(),
-                                  lng: place.geometry.location.lng(),
-                              };
-                              updateLocationState(newPin, place.formatted_address || '');
-                            }
-                          }}
-                        />
+                        <div className="grid gap-2">
+                            <Label htmlFor="address-search-dialog">Search for an address or place</Label>
+                            <Input 
+                                id="address-search-dialog" 
+                                ref={addressInputRef}
+                                placeholder="Start typing..."
+                                defaultValue={address}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -272,48 +320,7 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                 <Button type="submit" disabled={!alias || !address || !pin}>Save Address</Button>
             </DialogFooter>
         </form>
-    )
+    );
 }
 
-function AddressSearchBox({ onPlaceSelect, initialValue }: { onPlaceSelect: (place: google.maps.places.PlaceResult) => void, initialValue?: string }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const places = useMapsLibrary('places');
-
-  useEffect(() => {
-    if (!places || !inputRef.current) return;
     
-    const autocomplete = new places.Autocomplete(inputRef.current);
-    const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place.geometry) {
-        onPlaceSelect(place);
-      }
-    });
-
-    return () => {
-        if(listener) google.maps.event.removeListener(listener);
-        if (inputRef.current) {
-            google.maps.event.clearInstanceListeners(inputRef.current);
-        }
-        document.querySelectorAll('.pac-container').forEach(c => c.remove());
-    }
-  }, [places, onPlaceSelect]);
-  
-  // Set initial value if provided
-  useEffect(() => {
-    if (inputRef.current && initialValue) {
-        inputRef.current.value = initialValue;
-    }
-  }, [initialValue])
-
-  return (
-    <div className="grid gap-2">
-        <Label htmlFor="address-search-dialog">Search for delivery address</Label>
-        <Input 
-            id="address-search-dialog" 
-            ref={inputRef}
-            placeholder="Search for a place or address..."
-        />
-    </div>
-  )
-}

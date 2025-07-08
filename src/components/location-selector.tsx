@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from "@vis.gl/react-google-maps";
+import { useState, useEffect, useRef } from "react";
+import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,21 +25,15 @@ import type { Location as LocationType, LocationInfo, SavedAddress } from "@/lib
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useAuth } from "@/context/auth-context";
-import { Home, Briefcase, MapPin } from "lucide-react";
 
-interface LocationSelectorProps {
+interface MapControlProps {
   onLocationChange: (location: LocationInfo | null) => void;
 }
 
-const AddressIcon = ({ alias }: { alias: string }) => {
-  if (alias.toLowerCase().includes('home')) return <Home className="h-5 w-5 mr-3 shrink-0" />;
-  if (alias.toLowerCase().includes('work')) return <Briefcase className="h-5 w-5 mr-3 shrink-0" />;
-  return <MapPin className="h-5 w-5 mr-3 shrink-0" />
-}
-
-function MapControl({ onLocationChange }: LocationSelectorProps) {
+function MapControl({ onLocationChange }: MapControlProps) {
+  const { user } = useAuth();
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
-  const [deliverySelection, setDeliverySelection] = useState<string>('search');
+  const [deliveryOption, setDeliveryOption] = useState<string>('new');
   
   const [allLocations, setAllLocations] = useState<LocationType[]>([]);
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<LocationType | null>(null);
@@ -47,10 +41,13 @@ function MapControl({ onLocationChange }: LocationSelectorProps) {
   
   const [deliveryPin, setDeliveryPin] = useState<{lat: number; lng: number} | null>(null);
   const [address, setAddress] = useState("");
+  const [latInput, setLatInput] = useState("");
+  const [lngInput, setLngInput] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
   
-  const { user } = useAuth();
-  const map = useMap();
+  const placesLib = useMapsLibrary('places');
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -66,7 +63,6 @@ function MapControl({ onLocationChange }: LocationSelectorProps) {
     fetchLocations();
   }, []);
   
-  // Effect to update the final location info passed to the parent (cart page)
   useEffect(() => {
     if (deliveryType === 'pickup') {
       if (selectedPickupLocation) {
@@ -75,41 +71,108 @@ function MapControl({ onLocationChange }: LocationSelectorProps) {
       } else {
         onLocationChange(null);
       }
-    } else { // delivery
-      if (address && deliverySource) {
-        onLocationChange({ type: 'delivery', address, location: deliverySource });
-        if (deliveryPin) setMapCenter(deliveryPin);
-      } else {
-        onLocationChange(null);
-      }
-    }
-  }, [deliveryType, selectedPickupLocation, address, deliveryPin, deliverySource, onLocationChange]);
-
-  // Effect to handle switching between saved addresses and search
-  useEffect(() => {
-    if (deliveryType === 'delivery') {
-      if (deliverySelection.startsWith('addr_')) {
-        const savedAddr = user?.savedAddresses?.find(a => a.id === deliverySelection);
-        if (savedAddr) {
-          setDeliveryPin({ lat: savedAddr.lat, lng: savedAddr.lng });
-          setAddress(savedAddr.address);
-          if (map) map.panTo({ lat: savedAddr.lat, lng: savedAddr.lng });
+    } else { // Delivery
+        if (deliveryOption === 'new') {
+            if (address && deliverySource) {
+                onLocationChange({ type: 'delivery', address, location: deliverySource });
+                if (deliveryPin) setMapCenter(deliveryPin);
+            } else {
+                onLocationChange(null);
+            }
+        } else { // Saved address
+            const savedAddress = user?.savedAddresses?.find(a => a.id === deliveryOption);
+            if (savedAddress && deliverySource) {
+                onLocationChange({ type: 'delivery', address: savedAddress.address, location: deliverySource, addressId: savedAddress.id });
+                setMapCenter({ lat: savedAddress.lat, lng: savedAddress.lng });
+            } else {
+                onLocationChange(null);
+            }
         }
-      } else {
-        // Switched to search, clear old address info if it wasn't from search
-        setAddress('');
-        setDeliveryPin(null);
-      }
     }
-  }, [deliverySelection, deliveryType, user?.savedAddresses, map]);
+  }, [deliveryType, selectedPickupLocation, address, deliveryPin, deliverySource, onLocationChange, deliveryOption, user]);
 
 
-  const handlePickupLocationChange = (id: string) => {
-    const location = allLocations.find((l) => l.id === id);
-    if (location) {
-      setSelectedPickupLocation(location);
+  useEffect(() => {
+    if (!placesLib || !addressInputRef.current || deliveryType !== 'delivery' || deliveryOption !== 'new') {
+      return;
     }
+
+    const autocomplete = new placesLib.Autocomplete(addressInputRef.current, {
+        fields: ["geometry", "name", "formatted_address"],
+    });
+
+    const listener = autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place?.geometry?.location) {
+            const newPin = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+            };
+            setDeliveryPin(newPin);
+            const formattedAddress = place.formatted_address || place.name || '';
+            setAddress(formattedAddress);
+            setLatInput(newPin.lat.toString());
+            setLngInput(newPin.lng.toString());
+            if (addressInputRef.current) {
+                addressInputRef.current.value = formattedAddress;
+            }
+            if (newPin) setMapCenter(newPin);
+            toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
+        }
+    });
+
+    return () => {
+        // Important: clean up the listener and the DOM element
+        google.maps.event.removeListener(listener);
+        if (addressInputRef.current) {
+            google.maps.event.clearInstanceListeners(addressInputRef.current);
+        }
+        const pacContainers = document.getElementsByClassName('pac-container');
+        for (let i = 0; i < pacContainers.length; i++) {
+            pacContainers[i].remove();
+        }
+    };
+  }, [placesLib, toast, deliveryType, deliveryOption]);
+
+  const handleCoordinateSet = () => {
+    const lat = parseFloat(latInput);
+    const lng = parseFloat(lngInput);
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      toast({ variant: 'destructive', title: 'Invalid Coordinates', description: 'Please enter valid latitude and longitude.' });
+      return;
+    }
+    const newPin = { lat, lng };
+    setDeliveryPin(newPin);
+    const newAddress = `Lat: ${lat}, Lng: ${lng}`;
+    setAddress(newAddress); 
+    if (addressInputRef.current) {
+        addressInputRef.current.value = newAddress;
+    }
+    setMapCenter(newPin);
+    toast({ title: 'Location Set', description: `Pin set to ${newAddress}` });
+  };
+
+  const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    if (deliveryType !== 'delivery' || deliveryOption !== 'new' || !e.latLng) return;
+    const newPin = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+    setDeliveryPin(newPin);
+    setLatInput(newPin.lat.toFixed(6));
+    setLngInput(newPin.lng.toFixed(6));
+    const newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
+    setAddress(newAddress); 
+    if (addressInputRef.current) {
+        addressInputRef.current.value = newAddress;
+    }
+    setMapCenter(newPin);
+    toast({ title: "Location Set", description: "Delivery pin updated on the map." });
   }
+
+  const currentMapPin = deliveryType === 'delivery' 
+    ? (deliveryOption === 'new' ? deliveryPin : user?.savedAddresses?.find(a => a.id === deliveryOption))
+    : null;
 
   return (
     <Card>
@@ -134,7 +197,13 @@ function MapControl({ onLocationChange }: LocationSelectorProps) {
         {deliveryType === 'pickup' && (
             <div>
                 <Label className="text-sm font-medium">Pickup from store</Label>
-                <Select value={selectedPickupLocation?.id} onValueChange={handlePickupLocationChange}>
+                <Select
+                value={selectedPickupLocation?.id}
+                onValueChange={(id) => {
+                    const location = allLocations.find((l) => l.id === id);
+                    if (location) setSelectedPickupLocation(location);
+                }}
+                >
                 <SelectTrigger className="mt-2">
                     <SelectValue placeholder="Select a store" />
                 </SelectTrigger>
@@ -152,44 +221,43 @@ function MapControl({ onLocationChange }: LocationSelectorProps) {
         {deliveryType === 'delivery' && (
           <div className="grid gap-4">
             <div>
-              <Label className="text-sm font-medium">Deliver from store</Label>
-              <Select
+                <Label className="text-sm font-medium">Deliver from store</Label>
+                <Select
                 value={deliverySource?.id}
                 onValueChange={(id) => {
-                  const location = allLocations.find((l) => l.id === id);
-                  if (location) setDeliverySource(location);
+                    const location = allLocations.find((l) => l.id === id);
+                    if (location) setDeliverySource(location);
                 }}
-              >
+                >
                 <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select a source store" />
+                    <SelectValue placeholder="Select a source store" />
                 </SelectTrigger>
                 <SelectContent>
-                  {allLocations.map((location) => (
+                    {allLocations.map((location) => (
                     <SelectItem key={location.id} value={location.id}>
-                      {location.name}
+                        {location.name}
                     </SelectItem>
-                  ))}
+                    ))}
                 </SelectContent>
-              </Select>
+                </Select>
             </div>
-
-            <RadioGroup value={deliverySelection} onValueChange={setDeliverySelection}>
-              {(user?.savedAddresses || []).map((addr: SavedAddress) => (
-                <Label key={addr.id} htmlFor={addr.id} className="flex items-center p-3 -m-3 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer">
-                  <RadioGroupItem value={addr.id} id={addr.id} className="mr-4" />
-                  <AddressIcon alias={addr.alias} />
-                  <div className="flex-1">
-                      <p className="font-semibold">{addr.alias}</p>
-                      <p className="text-sm text-muted-foreground">{addr.address}</p>
+            <div>
+              <Label className="text-sm font-medium">Delivery Address</Label>
+              <RadioGroup value={deliveryOption} onValueChange={setDeliveryOption} className="mt-2 grid gap-2">
+                {user?.savedAddresses?.map(addr => (
+                   <div key={addr.id} className="flex items-center space-x-2">
+                      <RadioGroupItem value={addr.id} id={addr.id} />
+                      <Label htmlFor={addr.id} className="font-normal w-full">
+                        <span className="font-semibold">{addr.alias}</span>: <span className="text-muted-foreground">{addr.address}</span>
+                      </Label>
                   </div>
-                </Label>
-              ))}
-               <Label htmlFor="search" className="flex items-center p-3 -m-3 rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer">
-                <RadioGroupItem value="search" id="search" className="mr-4"/>
-                <MapPin className="h-5 w-5 mr-3 shrink-0" />
-                 <p className="font-semibold">Search for a new address</p>
-              </Label>
-            </RadioGroup>
+                ))}
+                <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="new" id="new" />
+                    <Label htmlFor="new" className="font-normal">Use a new address</Label>
+                </div>
+              </RadioGroup>
+            </div>
           </div>
         )}
 
@@ -199,92 +267,65 @@ function MapControl({ onLocationChange }: LocationSelectorProps) {
             zoom={13}
             mapId="pluto_brew_map_cart"
             gestureHandling={'greedy'}
-            onClick={(e) => {
-              if (deliveryType === 'delivery' && deliverySelection === 'search' && e.latLng) {
-                const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-                setDeliveryPin(newPin);
-                setAddress(`Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`);
-              }
-            }}
+            onClick={handleMapClick}
             clickableIcons={false}
           >
             {deliveryType === 'pickup' && allLocations.map(loc => (
-                 <AdvancedMarker key={loc.id} position={{ lat: loc.lat, lng: loc.lng }} title={loc.name} />
+                 <AdvancedMarker
+                    key={loc.id}
+                    position={{ lat: loc.lat, lng: loc.lng }}
+                    title={loc.name}
+                />
             ))}
-            {deliveryType === 'delivery' && deliveryPin && (
-              <AdvancedMarker position={deliveryPin} title={"Your Delivery Location"} />
+             {deliveryType === 'delivery' && currentMapPin && (
+              <AdvancedMarker 
+                  position={{ lat: currentMapPin.lat, lng: currentMapPin.lng }} 
+                  title={"Your Delivery Location"}
+              />
             )}
           </Map>
         </div>
         
-        {deliveryType === 'delivery' && deliverySelection === 'search' && (
-          <AddressSearchBox 
-            onPlaceSelect={(place) => {
-              if (place.geometry?.location) {
-                const newPin = {
-                    lat: place.geometry.location.lat(),
-                    lng: place.geometry.location.lng(),
-                };
-                setDeliveryPin(newPin);
-                setAddress(place.formatted_address || '');
-                if (map) map.panTo(newPin);
-              }
-            }}
-          />
+        {deliveryType === 'delivery' && deliveryOption === 'new' && (
+             <div className="grid gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="address-search">Search for delivery address</Label>
+                    <Input 
+                        id="address-search" 
+                        ref={addressInputRef}
+                        placeholder="Start typing your delivery address..."
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                    <div className="grid gap-2">
+                        <Label htmlFor="lat-input">Latitude</Label>
+                        <Input 
+                            id="lat-input" 
+                            placeholder="e.g., 49.0093"
+                            value={latInput}
+                            onChange={(e) => setLatInput(e.target.value)}
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="lng-input">Longitude</Label>
+                        <Input 
+                            id="lng-input" 
+                            placeholder="e.g., 8.4044"
+                            value={lngInput}
+                            onChange={(e) => setLngInput(e.target.value)}
+                        />
+                    </div>
+                    <Button onClick={handleCoordinateSet} className="w-full">Set from Coords</Button>
+                </div>
+            </div>
         )}
       </CardContent>
     </Card>
   );
 }
 
-
-function AddressSearchBox({ onPlaceSelect }: { onPlaceSelect: (place: google.maps.places.PlaceResult) => void}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const places = useMapsLibrary('places');
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!places || !inputRef.current) return;
-
-    const autocomplete = new places.Autocomplete(inputRef.current, {
-        fields: ["geometry", "name", "formatted_address"],
-    });
-    
-    const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place.geometry) {
-        onPlaceSelect(place);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Location not found',
-          description: 'Please select a valid address from the suggestions.'
-        })
-      }
-    });
-
-    return () => {
-        // Important: clean up the event listener and the autocomplete instance
-        if(listener) google.maps.event.removeListener(listener);
-        if (inputRef.current) {
-           google.maps.event.clearInstanceListeners(inputRef.current);
-        }
-    }
-  }, [places, onPlaceSelect, toast]);
-
-  return (
-    <div className="grid gap-2">
-        <Label htmlFor="address-search">Search for delivery address</Label>
-        <Input 
-            id="address-search" 
-            ref={inputRef}
-            placeholder="Start typing your delivery address..."
-        />
-    </div>
-  )
-}
-
-export function LocationSelector(props: LocationSelectorProps) {
+export function LocationSelector({ onLocationChange }: { onLocationChange: (location: LocationInfo | null) => void }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
@@ -304,7 +345,9 @@ export function LocationSelector(props: LocationSelectorProps) {
 
   return (
     <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
-      <MapControl {...props} />
+      <MapControl onLocationChange={onLocationChange} />
     </APIProvider>
   );
 }
+
+    
