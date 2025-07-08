@@ -17,7 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
     AlertDialog,
@@ -188,7 +187,7 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
     const [alias, setAlias] = useState(initialData?.alias || '');
 
     const inputRef = useRef<HTMLInputElement>(null);
-    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData || null);
+    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData ? {lat: initialData.lat, lng: initialData.lng} : null);
     const [address, setAddress] = useState<string>(initialData?.address || "");
     const [latInput, setLatInput] = useState<string>(initialData?.lat.toString() || "");
     const [lngInput, setLngInput] = useState<string>(initialData?.lng.toString() || "");
