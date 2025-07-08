@@ -190,6 +190,8 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
     const [address, setAddress] = useState('');
     const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
     const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
+    const [latInput, setLatInput] = useState('');
+    const [lngInput, setLngInput] = useState('');
 
     const placesLib = useMapsLibrary('places');
     const geocodingLib = useMapsLibrary('geocoding');
@@ -203,6 +205,8 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
             const initialPin = { lat: initialData.lat, lng: initialData.lng };
             setPin(initialPin);
             setMapCenter(initialPin);
+            setLatInput(initialData.lat.toString());
+            setLngInput(initialData.lng.toString());
             if (addressInputRef.current) {
                 addressInputRef.current.value = initialData.address;
             }
@@ -211,6 +215,8 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
              setAlias('');
              setAddress('');
              setPin(null);
+             setLatInput('');
+             setLngInput('');
              if (addressInputRef.current) {
                  addressInputRef.current.value = '';
              }
@@ -232,10 +238,17 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                     lng: place.geometry.location.lng(),
                 };
                 const formattedAddress = place.formatted_address || place.name || '';
+                
                 setPin(newPin);
                 setAddress(formattedAddress);
-                if (addressInputRef.current) addressInputRef.current.value = formattedAddress;
                 setMapCenter(newPin);
+                setLatInput(newPin.lat.toString());
+                setLngInput(newPin.lng.toString());
+
+                if (addressInputRef.current) {
+                    addressInputRef.current.value = formattedAddress;
+                }
+
                 toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
             }
         });
@@ -256,8 +269,10 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
         setPin(newPin);
         setMapCenter(newPin);
-        const geocoder = new geocodingLib.Geocoder();
+        setLatInput(newPin.lat.toFixed(6));
+        setLngInput(newPin.lng.toFixed(6));
 
+        const geocoder = new geocodingLib.Geocoder();
         geocoder.geocode({ location: e.latLng }, (results, status) => {
             let newAddress = '';
             if (status === 'OK' && results?.[0]) {
@@ -271,6 +286,33 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
             if (addressInputRef.current) addressInputRef.current.value = newAddress;
         });
     }
+    
+    const handleCoordinateSet = () => {
+        const lat = parseFloat(latInput);
+        const lng = parseFloat(lngInput);
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          toast({ variant: 'destructive', title: 'Invalid Coordinates', description: 'Please enter valid latitude and longitude.' });
+          return;
+        }
+        const newPin = { lat, lng };
+        setPin(newPin);
+        setMapCenter(newPin);
+        
+        if (!geocodingLib) return;
+        const geocoder = new geocodingLib.Geocoder();
+        geocoder.geocode({ location: newPin }, (results, status) => {
+            let newAddress = '';
+            if (status === 'OK' && results?.[0]) {
+                newAddress = results[0].formatted_address;
+                toast({ title: "Location Set", description: `Address found for coordinates.` });
+            } else {
+                newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
+                toast({ title: "Location Set", description: 'Using coordinates as address.' });
+            }
+            setAddress(newAddress);
+            if (addressInputRef.current) addressInputRef.current.value = newAddress;
+        });
+      };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -288,30 +330,48 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                     <Label htmlFor="alias">Address Name / Alias</Label>
                     <Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., Home, Work" />
                 </div>
-                <div>
-                    <Label>Location</Label>
-                    <div className="grid gap-4 pt-2">
-                        <div className="h-[250px] w-full rounded-md overflow-hidden border">
-                            <Map
-                                center={mapCenter}
-                                zoom={13}
-                                mapId="address_form_map"
-                                gestureHandling={'greedy'}
-                                onClick={handleMapClick}
-                                clickableIcons={false}
-                            >
-                                {pin && <AdvancedMarker position={pin} title={"Selected Location"} />}
-                            </Map>
-                        </div>
+                <div className="grid gap-4">
+                    <div className="h-[250px] w-full rounded-md overflow-hidden border">
+                        <Map
+                            center={mapCenter}
+                            zoom={13}
+                            mapId="address_form_map"
+                            gestureHandling={'greedy'}
+                            onClick={handleMapClick}
+                            clickableIcons={false}
+                        >
+                            {pin && <AdvancedMarker position={pin} title={"Selected Location"} />}
+                        </Map>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="address-search-dialog">Search for delivery address</Label>
+                        <Input 
+                            id="address-search-dialog" 
+                            ref={addressInputRef}
+                            placeholder="Start typing your delivery address..."
+                            defaultValue={address}
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
                         <div className="grid gap-2">
-                            <Label htmlFor="address-search-dialog">Search for an address or place</Label>
+                            <Label htmlFor="lat-input">Latitude</Label>
                             <Input 
-                                id="address-search-dialog" 
-                                ref={addressInputRef}
-                                placeholder="Start typing..."
-                                defaultValue={address}
+                                id="lat-input" 
+                                placeholder="e.g., 49.0093"
+                                value={latInput}
+                                onChange={(e) => setLatInput(e.target.value)}
                             />
                         </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="lng-input">Longitude</Label>
+                            <Input 
+                                id="lng-input" 
+                                placeholder="e.g., 8.4044"
+                                value={lngInput}
+                                onChange={(e) => setLngInput(e.target.value)}
+                            />
+                        </div>
+                        <Button type="button" onClick={handleCoordinateSet} className="w-full">Set from Coords</Button>
                     </div>
                 </div>
             </div>
