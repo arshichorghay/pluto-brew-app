@@ -83,7 +83,6 @@ function MapControl({ onLocationChange }: MapControlProps) {
       return;
     }
 
-    // This is the definitive fix. We let the Google library control the input.
     const autocomplete = new placesLib.Autocomplete(addressInputRef.current, {
         fields: ["geometry", "name", "formatted_address"],
         types: ["address"],
@@ -110,7 +109,9 @@ function MapControl({ onLocationChange }: MapControlProps) {
 
     return () => {
         google.maps.event.removeListener(listener);
-        google.maps.event.clearInstanceListeners(addressInputRef.current!);
+        if (addressInputRef.current) {
+            google.maps.event.clearInstanceListeners(addressInputRef.current);
+        }
          // Remove the pac-container from the DOM to avoid multiple suggestion boxes.
         const pacContainers = document.getElementsByClassName('pac-container');
         for (let i = 0; i < pacContainers.length; i++) {
