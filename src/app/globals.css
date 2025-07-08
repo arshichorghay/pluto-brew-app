@@ -57,3 +57,8 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* Fix Google Maps Autocomplete z-index issue in Dialogs */
+.pac-container {
+  z-index: 10000 !important;
+}

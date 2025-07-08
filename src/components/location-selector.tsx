@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -20,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { getLocations } from "@/lib/storage";
-import type { Location as LocationType, LocationInfo, SavedAddress } from "@/lib/types";
+import type { Location as LocationType, LocationInfo } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useAuth } from "@/context/auth-context";
 import { AddressPicker } from "./address-picker";
@@ -33,6 +32,7 @@ function MapControl({ onLocationChange }: { onLocationChange: (location: Locatio
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<LocationType | null>(null);
   const [deliverySource, setDeliverySource] = useState<LocationType | null>(null);
   
+  const savedAddresses = user?.savedAddresses || [];
   const [chosenSavedAddressId, setChosenSavedAddressId] = useState<string>('new');
   const [manualAddress, setManualAddress] = useState<{address: string, lat: number, lng: number} | null>(null);
 
@@ -48,6 +48,16 @@ function MapControl({ onLocationChange }: { onLocationChange: (location: Locatio
     };
     fetchLocations();
   }, []);
+
+  // Set default address choice when saved addresses are loaded or change.
+  useEffect(() => {
+    if (savedAddresses.length > 0) {
+      setChosenSavedAddressId(savedAddresses[0].id);
+    } else {
+      setChosenSavedAddressId('new');
+    }
+  }, [savedAddresses]);
+
 
   useEffect(() => {
     if (deliveryType === 'pickup') {
@@ -88,19 +98,10 @@ function MapControl({ onLocationChange }: { onLocationChange: (location: Locatio
     }
   }, [deliveryType, selectedPickupLocation, deliverySource, chosenSavedAddressId, manualAddress, onLocationChange, user]);
 
-  const handleSavedAddressChange = (addressId: string) => {
-    setChosenSavedAddressId(addressId);
-    if(addressId !== 'new') {
-        setManualAddress(null);
-    }
-  }
-
   const handleManualAddressSelect = useCallback((location: {address: string; lat: number, lng: number} | null) => {
     setManualAddress(location);
   }, []);
   
-  const savedAddresses = user?.savedAddresses || [];
-
   return (
     <Card>
       <CardHeader>
@@ -122,7 +123,7 @@ function MapControl({ onLocationChange }: { onLocationChange: (location: Locatio
         </RadioGroup>
 
         {deliveryType === 'pickup' && (
-          <div>
+          <div className="grid gap-2">
             <Label className="text-sm font-medium">Pickup from store</Label>
             <Select
               value={selectedPickupLocation?.id}
@@ -131,7 +132,7 @@ function MapControl({ onLocationChange }: { onLocationChange: (location: Locatio
                 if (location) setSelectedPickupLocation(location);
               }}
             >
-              <SelectTrigger className="mt-2">
+              <SelectTrigger>
                 <SelectValue placeholder="Select a store" />
               </SelectTrigger>
               <SelectContent>
@@ -169,25 +170,29 @@ function MapControl({ onLocationChange }: { onLocationChange: (location: Locatio
                 </Select>
             </div>
             
-            {savedAddresses.length > 0 && (
-                <div className="grid gap-2">
-                    <Label className="text-sm font-medium">Delivery Address</Label>
-                    <Select value={chosenSavedAddressId} onValueChange={handleSavedAddressChange}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Choose address..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {savedAddresses.map(addr => (
-                                <SelectItem key={addr.id} value={addr.id}>{addr.alias} - {addr.address}</SelectItem>
-                            ))}
-                            <SelectItem value="new">Use a new address</SelectItem>
-                        </SelectContent>
-                    </Select>
+            <div className="grid gap-2">
+                <Label className="text-sm font-medium">Deliver To</Label>
+                <RadioGroup value={chosenSavedAddressId} onValueChange={setChosenSavedAddressId} className="grid gap-3">
+                    {savedAddresses.map((addr) => (
+                        <Label key={addr.id} htmlFor={addr.id} className="flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                            <RadioGroupItem value={addr.id} id={addr.id} />
+                            <span className="font-normal flex-1">
+                                <span className="font-semibold">{addr.alias}</span>
+                                <span className="block text-sm text-muted-foreground">{addr.address}</span>
+                            </span>
+                        </Label>
+                    ))}
+                    <Label htmlFor="new-address" className="flex cursor-pointer items-center gap-3 rounded-md border p-3 transition-colors hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary">
+                        <RadioGroupItem value="new" id="new-address" />
+                        <span className="font-semibold">Use a new address</span>
+                    </Label>
+                </RadioGroup>
+            </div>
+
+            {chosenSavedAddressId === 'new' && (
+                <div className="pl-4 border-l-2 border-dashed">
+                    <AddressPicker onLocationSelect={handleManualAddressSelect} />
                 </div>
-            )}
-            
-            {(savedAddresses.length === 0 || chosenSavedAddressId === 'new') && (
-                <AddressPicker onLocationSelect={handleManualAddressSelect} />
             )}
           </div>
         )}
