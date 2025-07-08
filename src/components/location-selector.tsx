@@ -25,9 +25,45 @@ import type { Location as LocationType, LocationInfo } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
-interface MapControlProps {
-  onLocationChange: (location: LocationInfo | null) => void;
-}
+const AutocompleteInput = ({ onPlaceSelect }: { onPlaceSelect: (place: google.maps.places.PlaceResult) => void }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const places = useMapsLibrary('places');
+    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+    useEffect(() => {
+        if (!places || !inputRef.current) {
+            return;
+        }
+
+        if (!autocompleteRef.current) {
+            autocompleteRef.current = new places.Autocomplete(inputRef.current, {
+                fields: ["geometry", "formatted_address", "name"],
+                types: ["address"],
+            });
+        }
+        
+        const listener = autocompleteRef.current.addListener('place_changed', () => {
+            const place = autocompleteRef.current?.getPlace();
+            if (place) {
+                onPlaceSelect(place);
+            }
+        });
+
+        return () => {
+            if (listener) {
+                listener.remove();
+            }
+        };
+    }, [places, onPlaceSelect]);
+    
+    return (
+        <Input 
+            id="address-search" 
+            ref={inputRef}
+            placeholder="Start typing your delivery address..."
+        />
+    );
+};
 
 function MapControl({ onLocationChange }: MapControlProps) {
   const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
@@ -42,10 +78,8 @@ function MapControl({ onLocationChange }: MapControlProps) {
   const [lngInput, setLngInput] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
   
-  const placesLib = useMapsLibrary('places');
   const geocodingLib = useMapsLibrary('geocoding');
   const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
-  const addressInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,9 +93,10 @@ function MapControl({ onLocationChange }: MapControlProps) {
       const locations = await getLocations();
       setAllLocations(locations);
       if (locations.length > 0) {
-        setSelectedPickupLocation(locations[0]);
-        setDeliverySource(locations[0]);
-        setMapCenter({ lat: locations[0].lat, lng: locations[0].lng });
+        const defaultLocation = locations[0];
+        setSelectedPickupLocation(defaultLocation);
+        setDeliverySource(defaultLocation);
+        setMapCenter({ lat: defaultLocation.lat, lng: defaultLocation.lng });
       }
     };
     fetchLocations();
@@ -85,48 +120,26 @@ function MapControl({ onLocationChange }: MapControlProps) {
     }
   }, [deliveryType, selectedPickupLocation, address, deliveryPin, deliverySource, onLocationChange]);
 
-
-  useEffect(() => {
-    if (!placesLib || !addressInputRef.current || deliveryType !== 'delivery') {
-      return;
+  const handlePlaceSelect = (place: google.maps.places.PlaceResult) => {
+    if (place.geometry?.location && inputRef.current) {
+        const newPin = {
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng(),
+        };
+        const formattedAddress = place.formatted_address || place.name || '';
+        
+        setDeliveryPin(newPin);
+        setMapCenter(newPin);
+        setAddress(formattedAddress);
+        setLatInput(newPin.lat.toString());
+        setLngInput(newPin.lng.toString());
+        inputRef.current.value = formattedAddress;
+        
+        toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
     }
+  };
 
-    const autocomplete = new placesLib.Autocomplete(addressInputRef.current, {
-        fields: ["geometry", "name", "formatted_address"],
-        types: ["address"],
-    });
-
-    const listener = autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place?.geometry?.location) {
-            const newPin = {
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng(),
-            };
-            setDeliveryPin(newPin);
-            const formattedAddress = place.formatted_address || place.name || '';
-            setAddress(formattedAddress);
-            setLatInput(newPin.lat.toString());
-            setLngInput(newPin.lng.toString());
-            if (addressInputRef.current) {
-                addressInputRef.current.value = formattedAddress;
-            }
-            toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
-        }
-    });
-
-    return () => {
-        google.maps.event.removeListener(listener);
-        if (addressInputRef.current) {
-            google.maps.event.clearInstanceListeners(addressInputRef.current);
-        }
-         // Remove the pac-container from the DOM to avoid multiple suggestion boxes.
-        const pacContainers = document.getElementsByClassName('pac-container');
-        for (let i = 0; i < pacContainers.length; i++) {
-            pacContainers[i].remove();
-        }
-    };
-  }, [placesLib, toast, deliveryType]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleCoordinateSet = () => {
     const lat = parseFloat(latInput);
@@ -137,10 +150,11 @@ function MapControl({ onLocationChange }: MapControlProps) {
     }
     const newPin = { lat, lng };
     setDeliveryPin(newPin);
+    setMapCenter(newPin);
     const newAddress = `Lat: ${lat}, Lng: ${lng}`;
     setAddress(newAddress); 
-    if (addressInputRef.current) {
-        addressInputRef.current.value = newAddress;
+    if (inputRef.current) {
+        inputRef.current.value = newAddress;
     }
     toast({ title: 'Location Set', description: `Pin set to ${newAddress}` });
   };
@@ -159,15 +173,15 @@ function MapControl({ onLocationChange }: MapControlProps) {
         if (status === 'OK' && results?.[0]) {
             const newAddress = results[0].formatted_address;
             setAddress(newAddress);
-            if (addressInputRef.current) {
-                addressInputRef.current.value = newAddress;
+            if (inputRef.current) {
+                inputRef.current.value = newAddress;
             }
             toast({ title: "Location Set", description: `Delivery address updated.` });
         } else {
             const newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
             setAddress(newAddress); 
-            if (addressInputRef.current) {
-                addressInputRef.current.value = newAddress;
+            if (inputRef.current) {
+                inputRef.current.value = newAddress;
             }
             toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
         }
@@ -271,11 +285,7 @@ function MapControl({ onLocationChange }: MapControlProps) {
              <div className="grid gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="address-search">Search for delivery address</Label>
-                    <Input 
-                        id="address-search" 
-                        ref={addressInputRef}
-                        placeholder="Start typing your delivery address..."
-                    />
+                    <AutocompleteInput onPlaceSelect={handlePlaceSelect} />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
