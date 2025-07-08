@@ -2,7 +2,7 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -43,6 +43,35 @@ export default function ProfilePage() {
                             <Skeleton className="h-10 w-full" />
                         </CardContent>
                     </Card>
+                </TabsContent>
+                <TabsContent value="addresses">
+                    <div className="max-w-3xl grid gap-8">
+                        <Card>
+                            <CardHeader>
+                                <Skeleton className="h-7 w-48" />
+                                <Skeleton className="h-4 w-64 mt-2" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <Skeleton className="h-12 w-full" />
+                                    <Skeleton className="h-12 w-full" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <Skeleton className="h-7 w-56" />
+                                <Skeleton className="h-4 w-72 mt-2" />
+                            </CardHeader>
+                            <CardContent className="grid gap-6">
+                                <Skeleton className="h-40 w-full rounded-md" />
+                                <Skeleton className="h-10 w-full" />
+                            </CardContent>
+                            <CardFooter className="justify-end">
+                                <Skeleton className="h-10 w-32" />
+                            </CardFooter>
+                        </Card>
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>

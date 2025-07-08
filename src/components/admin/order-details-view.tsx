@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '../ui/skeleton';
 
 export function OrderDetailsView({ order }: { order: Order | null }) {
     const router = useRouter();
@@ -117,7 +118,10 @@ export function OrderDetailsView({ order }: { order: Order | null }) {
                         </CardHeader>
                         <CardContent>
                             {isLoadingCustomer ? (
-                                <p>Loading customer...</p>
+                                <div className="space-y-2">
+                                    <Skeleton className="h-5 w-3/4" />
+                                    <Skeleton className="h-4 w-1/2" />
+                                </div>
                             ) : customer ? (
                                 <>
                                     <p className="font-medium">{customer.name}</p>

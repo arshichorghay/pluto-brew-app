@@ -37,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (appUser) {
             setUser(appUser);
           } else {
+            // This can happen if a user is created in Firebase Auth but the Firestore doc creation fails
+            // or is delayed. We can try to recover by creating the record now.
             console.warn("Firebase Auth user exists but no corresponding Firestore document found. Creating one.");
             const newRecord: User = {
                 id: firebaseUser.uid,
@@ -51,8 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       } catch (error) {
-        console.error("Error during auth state change:", error);
-        setUser(null);
+        // THIS IS THE CRITICAL FIX:
+        // If fetching the user profile fails (e.g., network error), we DO NOT log the user out.
+        // We log the error and allow the app to continue with the potentially stale user data.
+        // The user's auth state with Firebase is still valid.
+        console.error("Auth state change error (profile fetch failed):", error);
       } finally {
         // This is critical: only set loading to false after the first check.
         setIsLoading(false);
@@ -95,10 +100,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     const firebaseUser = auth.currentUser;
     if (firebaseUser) {
-      const appUser = await getUserById(firebaseUser.uid);
-      if (appUser) {
-        setUser(appUser);
-      }
+        try {
+            const appUser = await getUserById(firebaseUser.uid);
+            if (appUser) {
+                setUser(appUser);
+            }
+        } catch (error) {
+            console.error("Failed to refresh user profile:", error);
+            // We don't log out here either, just fail gracefully.
+        }
     }
   };
 
