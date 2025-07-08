@@ -44,7 +44,6 @@ function MapControl({ onLocationChange }: MapControlProps) {
   
   const placesLib = useMapsLibrary('places');
   const addressInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,17 +79,18 @@ function MapControl({ onLocationChange }: MapControlProps) {
 
 
   useEffect(() => {
-    if (!placesLib || !addressInputRef.current) return;
-
-    if (!autocompleteRef.current) {
-        autocompleteRef.current = new placesLib.Autocomplete(addressInputRef.current, {
-            fields: ["geometry", "name", "formatted_address"],
-            types: ["address"],
-        });
+    if (!placesLib || !addressInputRef.current || deliveryType !== 'delivery') {
+      return;
     }
 
-    const placeChangedListener = autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current?.getPlace();
+    // This is the definitive fix. We let the Google library control the input.
+    const autocomplete = new placesLib.Autocomplete(addressInputRef.current, {
+        fields: ["geometry", "name", "formatted_address"],
+        types: ["address"],
+    });
+
+    const listener = autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
         if (place?.geometry?.location) {
             const newPin = {
                 lat: place.geometry.location.lat(),
@@ -109,11 +109,15 @@ function MapControl({ onLocationChange }: MapControlProps) {
     });
 
     return () => {
-        if (google?.maps?.event && autocompleteRef.current) {
-            google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        google.maps.event.removeListener(listener);
+        google.maps.event.clearInstanceListeners(addressInputRef.current!);
+         // Remove the pac-container from the DOM to avoid multiple suggestion boxes.
+        const pacContainers = document.getElementsByClassName('pac-container');
+        for (let i = 0; i < pacContainers.length; i++) {
+            pacContainers[i].remove();
         }
     };
-  }, [placesLib, toast]);
+  }, [placesLib, toast, deliveryType]);
 
   const handleCoordinateSet = () => {
     const lat = parseFloat(latInput);
