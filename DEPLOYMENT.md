@@ -23,11 +23,12 @@ This guide provides step-by-step instructions to deploy your Pluto Brew applicat
     > The error `Invalid project id: Pluto_V1` happens because an ID contains uppercase letters, which is not allowed.
 
 2.  **Connect Your Local Project to Firebase:**
+    -   **Find Your Project ID:** Go to your [Firebase Project Settings](https://console.firebase.google.com/project/_/settings/general) by clicking the gear icon next to "Project Overview". Your correct, all-lowercase **Project ID** will be listed there.
+    -   **Set Your Project ID:** Open the `.firebaserc` file in your project. You will see a line with `"default": "pluto-brew-app"`. Replace `pluto-brew-app` with your actual **Firebase Project ID** (the all-lowercase one from your Firebase Project Settings).
     -   **Log in:** Open your terminal and run this command. A browser window will open to complete the login.
         ```bash
         firebase login
         ```
-    -   **Set Your Project ID:** Open the `.firebaserc` file in your project. You will see a line with `"default": "pluto-brew-app"`. Replace `pluto-brew-app` with your actual **Firebase Project ID** (the all-lowercase one from your Firebase Project Settings).
 
 ---
 
