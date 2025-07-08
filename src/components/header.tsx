@@ -2,14 +2,12 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
+import dynamic from 'next/dynamic';
 import { Icons } from "./icons";
 import { MainNav } from "./main-nav";
-import { HeaderSearch } from "./header-search";
 import { HeaderActions } from "./header-actions";
 import { Input } from "./ui/input";
 import { Search } from "lucide-react";
-import { ClientOnly } from "./client-only";
 
 function SearchSkeleton() {
   return (
@@ -25,6 +23,12 @@ function SearchSkeleton() {
   )
 }
 
+const HeaderSearch = dynamic(() => import('./header-search').then(mod => mod.HeaderSearch), {
+  ssr: false,
+  loading: () => <SearchSkeleton />
+});
+
+
 export function Header() {
 
   return (
@@ -37,11 +41,7 @@ export function Header() {
         <div className="hidden md:block">
             <MainNav />
         </div>
-        <ClientOnly fallback={<SearchSkeleton />}>
-          <Suspense fallback={<SearchSkeleton />}>
-            <HeaderSearch />
-          </Suspense>
-        </ClientOnly>
+        <HeaderSearch />
         <HeaderActions />
       </div>
     </header>

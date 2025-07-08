@@ -1,7 +1,6 @@
 import { getProducts } from "@/lib/storage";
-import { MarketplaceClientView } from "@/components/marketplace-client-view";
-import { Suspense } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from 'next/dynamic';
 
 function MarketplaceSkeleton() {
   return (
@@ -29,13 +28,19 @@ function MarketplaceSkeleton() {
   );
 }
 
+const MarketplaceClientView = dynamic(
+  () => import('@/components/marketplace-client-view').then((mod) => mod.MarketplaceClientView),
+  {
+    loading: () => <MarketplaceSkeleton />,
+    ssr: false,
+  }
+);
+
 
 export default async function MarketplacePage() {
   const allProducts = await getProducts();
 
   return (
-    <Suspense fallback={<MarketplaceSkeleton />}>
-      <MarketplaceClientView allProducts={allProducts} />
-    </Suspense>
+    <MarketplaceClientView allProducts={allProducts} />
   );
 }

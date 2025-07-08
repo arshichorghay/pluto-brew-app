@@ -1,6 +1,5 @@
-import { Suspense } from 'react';
-import { CartView } from '@/components/cart-view';
 import { Skeleton } from '@/components/ui/skeleton';
+import dynamic from 'next/dynamic';
 
 function CartSkeleton() {
     return (
@@ -20,10 +19,17 @@ function CartSkeleton() {
     );
 }
 
+const CartView = dynamic(
+  () => import('@/components/cart-view').then((mod) => mod.CartView),
+  {
+    loading: () => <CartSkeleton />,
+    ssr: false,
+  }
+);
+
+
 export default function CartPage() {
     return (
-        <Suspense fallback={<CartSkeleton />}>
-            <CartView />
-        </Suspense>
+        <CartView />
     );
 }
