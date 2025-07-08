@@ -26,6 +26,17 @@ export function AddressPicker({ onLocationSelect, initialLocation }: AddressPick
     const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
     const { toast } = useToast();
 
+    const updateLocationState = useCallback((newPin: { lat: number; lng: number }, newAddress: string) => {
+        setPin(newPin);
+        setMapCenter(newPin);
+        setAddress(newAddress);
+        setLatInput(newPin.lat.toString());
+        setLngInput(newPin.lng.toString());
+        if (inputRef.current) {
+            inputRef.current.value = newAddress;
+        }
+    }, []);
+
     useEffect(() => {
         if(geocodingLib) {
             setGeocoder(new geocodingLib.Geocoder());
@@ -80,17 +91,6 @@ export function AddressPicker({ onLocationSelect, initialLocation }: AddressPick
             onLocationSelect(null);
         }
     }, [pin, address, onLocationSelect]);
-    
-    const updateLocationState = useCallback((newPin: { lat: number; lng: number }, newAddress: string) => {
-        setPin(newPin);
-        setMapCenter(newPin);
-        setAddress(newAddress);
-        setLatInput(newPin.lat.toString());
-        setLngInput(newPin.lng.toString());
-        if (inputRef.current) {
-            inputRef.current.value = newAddress;
-        }
-    }, []);
 
     const handleCoordinateSet = () => {
         const lat = parseFloat(latInput);
