@@ -113,6 +113,16 @@ export const getProducts = async (): Promise<Product[]> => {
     return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
 };
 
+export const getProductById = async (productId: string): Promise<Product | null> => {
+    if (!productId) return null;
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    const docSnap = await getDoc(productRef);
+    if (docSnap.exists()) {
+        return { ...docSnap.data(), id: docSnap.id } as Product;
+    }
+    return null;
+}
+
 export const updateProduct = async (productId: string, data: UpdateProduct): Promise<void> => {
     const productRef = doc(db, PRODUCTS_COLLECTION, productId);
     await updateDoc(productRef, data as any);
