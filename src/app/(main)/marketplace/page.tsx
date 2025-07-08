@@ -1,24 +1,42 @@
 
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
 import { getProducts } from "@/lib/storage";
+import type { Product } from "@/lib/types";
 import { Frown } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function MarketplacePage({
-  searchParams,
-}: {
-  searchParams?: { [key: string]: string | string[] | undefined };
-}) {
-  const allProducts = await getProducts();
-  const searchQuery = typeof searchParams?.q === 'string' ? searchParams.q : '';
+export default function MarketplacePage() {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q') || '';
 
-  const filteredProducts = searchQuery
-    ? allProducts.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : allProducts;
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      const products = await getProducts();
+      setAllProducts(products);
+      setIsLoading(false);
+    };
+    fetchProducts();
+  }, []);
+
+  const filteredProducts = useMemo(() => {
+    if (isLoading) return [];
+    return searchQuery
+      ? allProducts.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.category.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : allProducts;
+  }, [searchQuery, allProducts, isLoading]);
 
   return (
     <div>
@@ -26,12 +44,28 @@ export default async function MarketplacePage({
         <h1 className="text-3xl md:text-4xl font-headline">
           {searchQuery ? `Searching for "${searchQuery}"` : "Our Brews"}
         </h1>
-        <p className="text-muted-foreground mt-2 md:mt-0">
-          {filteredProducts.length} results found
-        </p>
+        {!isLoading && (
+          <p className="text-muted-foreground mt-2 md:mt-0">
+            {filteredProducts.length} results found
+          </p>
+        )}
       </div>
       
-      {filteredProducts.length > 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <Skeleton className="aspect-square w-full rounded-lg" />
+              <Skeleton className="h-6 w-3/4 mt-2" />
+              <Skeleton className="h-4 w-1/2" />
+              <div className="flex justify-between items-center mt-2">
+                <Skeleton className="h-6 w-1/4" />
+                <Skeleton className="h-9 w-28" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />

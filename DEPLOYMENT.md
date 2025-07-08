@@ -1,6 +1,7 @@
+
 # Deployment Guide: Pluto Brew
 
-This guide provides step-by-step instructions to deploy your Pluto Brew application to the web using Firebase Hosting.
+This guide provides step-by-step instructions to deploy your Pluto Brew application to the web using Firebase Hosting. Because this app is configured as a "static" site, it can be hosted entirely within Firebase's free tier.
 
 ## Prerequisites
 
@@ -30,18 +31,12 @@ This is the most important step to ensure your app can connect to Firebase and G
 
 1.  **Create a Firebase Project:** If you haven't already, go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
 
-2.  **Upgrade to the "Blaze" Plan:**
-    - In your new Firebase project, look for the "Upgrade" button near the project name.
-    - Select the **Blaze (Pay-as-you-go)** plan.
-    - **Why?** Dynamic Next.js apps require server-side code to run. Firebase uses a service called Cloud Functions for this, which is only available on the Blaze plan.
-    - **Don't worry about cost!** The Blaze plan includes a very generous **permanent free tier**. For a small or medium-sized application, you are highly unlikely to exceed the free limits, so you will not be charged. You can set budget alerts in Google Cloud for peace of mind.
-
-3.  **Connect Your Local Project to Firebase:**
-    - **Log in:** Open your terminal and run this command. A browser window will open to complete the login.
-      ```bash
-      firebase login
-      ```
-    - **Set Your Project ID:** Open the `.firebaserc` file in your project. You will see a line with `"default": "pluto-brew-app"`. Replace `pluto-brew-app` with your actual **Firebase Project ID** (which you can find in your Firebase Project Settings).
+2.  **Connect Your Local Project to Firebase:**
+    -   **Log in:** Open your terminal and run this command. A browser window will open to complete the login.
+        ```bash
+        firebase login
+        ```
+    -   **Set Your Project ID:** Open the `.firebaserc` file in your project. You will see a line with `"default": "pluto-brew-app"`. Replace `pluto-brew-app` with your actual **Firebase Project ID** (which you can find in your Firebase Project Settings).
 
 ---
 
@@ -49,7 +44,7 @@ This is the most important step to ensure your app can connect to Firebase and G
 
 You're ready for takeoff!
 
-1.  **Build the app:** This command creates an optimized, production-ready version of your app.
+1.  **Build the app:** This command creates an optimized, static version of your app in a folder named `out`.
     ```bash
     npm run build
     ```

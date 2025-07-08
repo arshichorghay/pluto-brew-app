@@ -1,6 +1,9 @@
+
 # Pluto Brew - A Firebase Studio Project
 
 This is a Next.js starter project for a craft beer marketplace called "Pluto Brew", created in Firebase Studio. It features a customer-facing marketplace and an admin dashboard for managing products, orders, users, and locations.
+
+This project is configured as a **static site**, which means it can be deployed entirely on the **Firebase Hosting free tier**.
 
 ## Key Features
 
