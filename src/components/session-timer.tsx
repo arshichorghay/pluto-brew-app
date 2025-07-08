@@ -18,7 +18,7 @@ const SESSION_DURATION_SECONDS = 30 * 60; // 30 minutes
 const WARNING_TIME_SECONDS = 60; // 1 minute warning
 
 export function SessionTimer() {
-    const { user, logout } = useAuth();
+    const { user, logout, isLoading } = useAuth();
     const router = useRouter();
     const [secondsLeft, setSecondsLeft] = useState(SESSION_DURATION_SECONDS);
     const [showWarning, setShowWarning] = useState(false);
@@ -73,7 +73,7 @@ export function SessionTimer() {
     }, [user, resetTimer, handleLogoutClick]);
 
 
-    if (!user) {
+    if (isLoading || !user) {
         return null;
     }
 
