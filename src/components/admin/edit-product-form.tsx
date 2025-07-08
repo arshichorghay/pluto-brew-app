@@ -20,6 +20,7 @@ const productFormSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   stock: z.coerce.number().int().min(0, 'Stock must be a positive integer.'),
   category: z.string().min(1, 'Category is required.'),
+  imageUrl: z.string().url('Please enter a valid URL.'),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -41,6 +42,7 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
       price: product?.price || 0,
       stock: product?.stock || 0,
       category: product?.category || '',
+      imageUrl: product?.imageUrl || '',
     },
   });
 
@@ -114,6 +116,13 @@ export function EditProductForm({ product, isOpen, onOpenChange, onProductUpdate
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
+                <FormControl><Input {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+             <FormField control={form.control} name="imageUrl" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Image URL</FormLabel>
                 <FormControl><Input {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
