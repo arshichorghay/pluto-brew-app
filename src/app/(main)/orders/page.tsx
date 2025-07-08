@@ -56,30 +56,27 @@ export default function OrdersPage() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const router = useRouter();
 
+  // Effect to handle redirection if user is not logged in
   useEffect(() => {
-    // Wait for the authentication check to complete
-    if (isAuthLoading) {
-      return; 
-    }
-    // If auth is done and there's no user, redirect to login
-    if (!user) {
+    if (!isAuthLoading && !user) {
       router.push('/');
-      return;
     }
+  }, [isAuthLoading, user, router]);
 
-    // Auth is complete and we have a user, so fetch their orders
-    const fetchOrders = async () => {
-      setIsLoadingOrders(true);
-      const orders = await getOrders();
-      setUserOrders(orders.filter(order => order.userId === user.id));
-      setIsLoadingOrders(false);
-    };
+  // Effect to fetch orders only when a user is confirmed
+  useEffect(() => {
+    if (user) {
+      const fetchOrders = async () => {
+        setIsLoadingOrders(true);
+        const orders = await getOrders();
+        setUserOrders(orders.filter(order => order.userId === user.id));
+        setIsLoadingOrders(false);
+      };
+      fetchOrders();
+    }
+  }, [user]); // This effect depends only on the user object
 
-    fetchOrders();
-  }, [user, isAuthLoading, router]);
-
-  // While checking auth status or if there's no user, show a loading skeleton.
-  // This prevents the page from flashing content before redirecting.
+  // Show a skeleton while auth is loading or if there's no user (during redirect)
   if (isAuthLoading || !user) {
     return (
         <div className="container mx-auto py-8">
