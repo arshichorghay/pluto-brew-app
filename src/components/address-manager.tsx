@@ -11,13 +11,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -31,7 +24,7 @@ import { useAuth } from '@/context/auth-context';
 import { updateUser } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { type SavedAddress } from '@/lib/types';
-import { Home, Briefcase, PlusCircle, MapPin, Trash2, Edit } from 'lucide-react';
+import { Home, Briefcase, MapPin, Trash2, Edit } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
@@ -46,19 +39,14 @@ export function AddressManager() {
     const { user, login } = useAuth();
     const { toast } = useToast();
     
-    const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState<SavedAddress | null>(null);
     const [addressToDelete, setAddressToDelete] = useState<SavedAddress | null>(null);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const handleEdit = (address: SavedAddress) => {
         setAddressToEdit(address);
-        setIsFormOpen(true);
-    };
-
-    const handleAddNew = () => {
-        setAddressToEdit(null);
-        setIsFormOpen(true);
+        formRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
     const handleDeleteRequest = (address: SavedAddress) => {
@@ -73,7 +61,6 @@ export function AddressManager() {
         
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            // Re-login to refresh user data in context.
             await login(user.email, user.password);
             toast({ title: "Address Deleted", description: `The address "${addressToDelete.alias}" was removed.` });
         } catch (error) {
@@ -100,11 +87,10 @@ export function AddressManager() {
 
         try {
             await updateUser(user.id, { savedAddresses: updatedAddresses });
-            // Re-login to refresh user data
             await login(user.email, user.password);
             toast({ title: "Address Saved", description: "Your address list has been updated." });
-            setIsFormOpen(false);
-        } catch (error: any) {
+            setAddressToEdit(null);
+        } catch (error) {
              toast({ variant: "destructive", title: "Error", description: "Failed to save address." });
         }
     };
@@ -125,11 +111,11 @@ export function AddressManager() {
     );
 
     return (
-        <>
+        <div className="grid gap-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Your Saved Addresses</CardTitle>
-                    <CardDescription>Add or remove delivery locations for faster checkout.</CardDescription>
+                    <CardDescription>Manage your delivery locations.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
@@ -150,36 +136,18 @@ export function AddressManager() {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter>
-                    <Button className="w-full" variant="outline" onClick={handleAddNew}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Address
-                    </Button>
-                </CardFooter>
             </Card>
 
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent 
-                    className="max-w-2xl"
-                    onInteractOutside={(e) => {
-                        const target = e.target as HTMLElement;
-                        if (target.closest('.pac-container')) {
-                            e.preventDefault();
-                        }
-                    }}
-                >
-                    <DialogHeader>
-                        <DialogTitle>{addressToEdit ? 'Edit' : 'Add'} Address</DialogTitle>
-                    </DialogHeader>
-                    <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
-                        <AddressForm 
-                            onSave={handleFormSave} 
-                            onCancel={() => setIsFormOpen(false)}
-                            initialData={addressToEdit}
-                            isOpen={isFormOpen}
-                        />
-                    </APIProvider>
-                </DialogContent>
-            </Dialog>
+            <div ref={formRef}>
+                <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
+                    <AddressForm 
+                        key={addressToEdit?.id ?? 'new'}
+                        onSave={handleFormSave} 
+                        onCancel={() => setAddressToEdit(null)}
+                        initialData={addressToEdit}
+                    />
+                </APIProvider>
+            </div>
 
             <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
                 <AlertDialogContent>
@@ -195,25 +163,23 @@ export function AddressManager() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
 }
-
 
 interface AddressFormProps {
     onSave: (data: Omit<SavedAddress, 'id'>) => void;
     onCancel: () => void;
     initialData?: SavedAddress | null;
-    isOpen: boolean;
 }
 
-function AddressForm({ onSave, onCancel, initialData, isOpen }: AddressFormProps) {
-    const [alias, setAlias] = useState('');
-    const [address, setAddress] = useState('');
-    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
-    const [mapCenter, setMapCenter] = useState({ lat: 49.0069, lng: 8.4037 });
-    const [latInput, setLatInput] = useState('');
-    const [lngInput, setLngInput] = useState('');
+function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
+    const [alias, setAlias] = useState(initialData?.alias || '');
+    const [address, setAddress] = useState(initialData?.address || '');
+    const [pin, setPin] = useState<{ lat: number; lng: number } | null>(initialData ? {lat: initialData.lat, lng: initialData.lng} : null);
+    const [mapCenter, setMapCenter] = useState(initialData ? { lat: initialData.lat, lng: initialData.lng } : { lat: 49.0069, lng: 8.4037 });
+    const [latInput, setLatInput] = useState(initialData?.lat.toString() || '');
+    const [lngInput, setLngInput] = useState(initialData?.lng.toString() || '');
 
     const placesLib = useMapsLibrary('places');
     const geocodingLib = useMapsLibrary('geocoding');
@@ -221,19 +187,17 @@ function AddressForm({ onSave, onCancel, initialData, isOpen }: AddressFormProps
     const { toast } = useToast();
 
     useEffect(() => {
-        if (isOpen) {
-            setAlias(initialData?.alias || '');
-            setAddress(initialData?.address || '');
-            const newPin = initialData ? { lat: initialData.lat, lng: initialData.lng } : null;
-            setPin(newPin);
-            setMapCenter(newPin || { lat: 49.0069, lng: 8.4037 });
-            setLatInput(initialData?.lat.toString() || '');
-            setLngInput(initialData?.lng.toString() || '');
-            if (addressInputRef.current) {
-                addressInputRef.current.value = initialData?.address || '';
-            }
+        setAlias(initialData?.alias || '');
+        setAddress(initialData?.address || '');
+        const newPin = initialData ? { lat: initialData.lat, lng: initialData.lng } : null;
+        setPin(newPin);
+        setMapCenter(newPin || { lat: 49.0069, lng: 8.4037 });
+        setLatInput(initialData?.lat.toString() || '');
+        setLngInput(initialData?.lng.toString() || '');
+        if (addressInputRef.current) {
+            addressInputRef.current.value = initialData?.address || '';
         }
-    }, [isOpen, initialData]);
+    }, [initialData]);
 
     const updateLocationState = useCallback((lat: number, lng: number, addr: string) => {
         setPin({ lat, lng });
@@ -247,7 +211,7 @@ function AddressForm({ onSave, onCancel, initialData, isOpen }: AddressFormProps
     }, []);
     
     useEffect(() => {
-        if (!isOpen || !placesLib || !addressInputRef.current) return;
+        if (!placesLib || !addressInputRef.current) return;
 
         const autocomplete = new placesLib.Autocomplete(addressInputRef.current, {
             fields: ["geometry", "name", "formatted_address"],
@@ -267,12 +231,11 @@ function AddressForm({ onSave, onCancel, initialData, isOpen }: AddressFormProps
         return () => {
             if (typeof google !== 'undefined' && listener) {
                 google.maps.event.removeListener(listener);
-                if (addressInputRef.current) {
-                    google.maps.event.clearInstanceListeners(addressInputRef.current);
-                }
+                const pacContainers = document.querySelectorAll('.pac-container');
+                pacContainers.forEach(container => container.remove());
             }
         };
-    }, [isOpen, placesLib, toast, updateLocationState]);
+    }, [placesLib, toast, updateLocationState]);
 
     const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (!geocodingLib || !e.latLng) return;
@@ -327,61 +290,71 @@ function AddressForm({ onSave, onCancel, initialData, isOpen }: AddressFormProps
     };
     
     return (
-        <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="alias">Address Name / Alias</Label>
-                    <Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., Home, Work" />
-                </div>
-                <div className="grid gap-4">
-                    <div className="h-[250px] w-full rounded-md overflow-hidden border">
-                        <Map
-                            center={mapCenter}
-                            zoom={13}
-                            mapId="address_form_map"
-                            gestureHandling={'greedy'}
-                            onClick={handleMapClick}
-                            clickableIcons={false}
-                        >
-                            {pin && <AdvancedMarker position={pin} title={"Selected Location"} />}
-                        </Map>
-                    </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>{initialData ? `Editing "${initialData.alias}"` : 'Add a New Address'}</CardTitle>
+                <CardDescription>
+                    {initialData ? 'Update the details below.' : 'Fill out the form to save a new delivery location.'}
+                </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+                <CardContent className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="address-search-dialog">Search for delivery address</Label>
-                        <Input 
-                            id="address-search-dialog" 
-                            ref={addressInputRef}
-                            placeholder="Start typing your delivery address..."
-                            defaultValue={address}
-                        />
+                        <Label htmlFor="alias">Address Name / Alias</Label>
+                        <Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="e.g., Home, Work" required />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
-                        <div className="grid gap-2">
-                            <Label htmlFor="lat-input-form">Latitude</Label>
-                            <Input 
-                                id="lat-input-form" 
-                                placeholder="e.g., 49.0093"
-                                value={latInput}
-                                onChange={(e) => setLatInput(e.target.value)}
-                            />
+                    <div className="grid gap-4">
+                        <div className="h-[250px] w-full rounded-md overflow-hidden border">
+                            <Map
+                                center={mapCenter}
+                                zoom={13}
+                                mapId="address_form_map"
+                                gestureHandling={'greedy'}
+                                onClick={handleMapClick}
+                                clickableIcons={false}
+                            >
+                                {pin && <AdvancedMarker position={pin} title={"Selected Location"} />}
+                            </Map>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="lng-input-form">Longitude</Label>
+                            <Label htmlFor="address-search-profile">Search for delivery address</Label>
                             <Input 
-                                id="lng-input-form" 
-                                placeholder="e.g., 8.4044"
-                                value={lngInput}
-                                onChange={(e) => setLngInput(e.target.value)}
+                                id="address-search-profile" 
+                                ref={addressInputRef}
+                                placeholder="Start typing your delivery address..."
+                                defaultValue={address}
                             />
                         </div>
-                        <Button type="button" onClick={handleCoordinateSet} className="w-full">Set from Coords</Button>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                            <div className="grid gap-2">
+                                <Label htmlFor="lat-input-form">Latitude</Label>
+                                <Input 
+                                    id="lat-input-form" 
+                                    placeholder="e.g., 49.0093"
+                                    value={latInput}
+                                    onChange={(e) => setLatInput(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="lng-input-form">Longitude</Label>
+                                <Input 
+                                    id="lng-input-form" 
+                                    placeholder="e.g., 8.4044"
+                                    value={lngInput}
+                                    onChange={(e) => setLngInput(e.target.value)}
+                                />
+                            </div>
+                            <Button type="button" onClick={handleCoordinateSet} className="w-full">Set from Coords</Button>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <DialogFooter>
-                <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-                <Button type="submit" disabled={!alias || !address || !pin}>Save Address</Button>
-            </DialogFooter>
-        </form>
+                </CardContent>
+                <CardFooter className="justify-end gap-2">
+                    {initialData && <Button type="button" variant="ghost" onClick={onCancel}>Cancel Edit</Button>}
+                    <Button type="submit" disabled={!alias || !address || !pin}>
+                        {initialData ? 'Update Address' : 'Save New Address'}
+                    </Button>
+                </CardFooter>
+            </form>
+        </Card>
     );
 }
