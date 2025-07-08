@@ -1,9 +1,26 @@
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { Icons } from "./icons";
 import { MainNav } from "./main-nav";
 import { HeaderSearch } from "./header-search";
 import { HeaderActions } from "./header-actions";
+import { Input } from "./ui/input";
+import { Search } from "lucide-react";
+
+function SearchSkeleton() {
+  return (
+    <div className="relative ml-auto flex-1 sm:flex-initial">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          placeholder="Search products..."
+          className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
+          disabled
+        />
+    </div>
+  )
+}
 
 export function Header() {
 
@@ -17,7 +34,9 @@ export function Header() {
         <div className="hidden md:block">
             <MainNav />
         </div>
-        <HeaderSearch />
+        <Suspense fallback={<SearchSkeleton />}>
+          <HeaderSearch />
+        </Suspense>
         <HeaderActions />
       </div>
     </header>
