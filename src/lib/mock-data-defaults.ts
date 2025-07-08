@@ -13,7 +13,17 @@ export const mockProducts: Product[] = [
 
 export const mockUsers: User[] = [
     { id: '1', name: 'Admin User', email: 'admin@plutobrew.com', password: 'admin', role: 'admin'},
-    { id: '2', name: 'Customer One', email: 'customer1@example.com', password: 'password', role: 'customer' },
+    { 
+      id: '2', 
+      name: 'Customer One', 
+      email: 'customer1@example.com', 
+      password: 'password', 
+      role: 'customer',
+      savedAddresses: [
+        { id: 'addr_home_1', alias: 'Home', address: 'Karl-Wilhelm-Straße 1, 76131 Karlsruhe, Germany', lat: 49.0118, lng: 8.4063 },
+        { id: 'addr_work_1', alias: 'Work', address: 'Hertzstraße 16, 76187 Karlsruhe, Germany', lat: 49.024, lng: 8.355 }
+      ]
+    },
     { id: '3', name: 'Customer Two', email: 'customer2@example.com', password: 'password', role: 'customer' },
 ];
 

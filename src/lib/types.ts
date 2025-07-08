@@ -1,11 +1,19 @@
 
+export interface SavedAddress {
+  id: string;
+  alias: string;
+  address: string;
+  lat: number;
+  lng: number;
+}
 
 export interface User {
-  id: string;
+  id:string;
   name: string;
   email: string;
   password?: string;
   role: 'customer' | 'admin';
+  savedAddresses?: SavedAddress[];
 }
 
 export type NewUser = Omit<User, 'id'>;
@@ -59,4 +67,5 @@ export interface LocationInfo {
   type: 'pickup' | 'delivery';
   address: string;
   location: Location;
+  addressId?: string;
 }
