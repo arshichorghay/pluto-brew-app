@@ -12,12 +12,14 @@ import {
   setDoc,
 } from 'firebase/firestore';
 
-import type { User, Order, Location, OrderStatus, NewUser, NewOrder } from './types';
-import { mockUsers as defaultUsers, mockOrders as defaultOrders, mockLocations as defaultLocations } from './mock-data-defaults';
+import type { User, Order, Location, OrderStatus, NewUser, NewOrder, Product, UpdateUser, UpdateProduct, UpdateLocation } from './types';
+import { mockUsers as defaultUsers, mockOrders as defaultOrders, mockLocations as defaultLocations, mockProducts as defaultProducts } from './mock-data-defaults';
 
 const USERS_COLLECTION = 'users';
 const ORDERS_COLLECTION = 'orders';
 const LOCATIONS_COLLECTION = 'locations';
+const PRODUCTS_COLLECTION = 'products';
+
 
 // Helper function to seed data if a collection is empty
 const seedCollection = async <T extends {id: string}>(collectionName: string, defaultData: T[]) => {
@@ -42,7 +44,8 @@ const seedDatabase = async () => {
         await Promise.all([
             seedCollection<User>(USERS_COLLECTION, defaultUsers),
             seedCollection<Location>(LOCATIONS_COLLECTION, defaultLocations),
-            seedCollection<Order>(ORDERS_COLLECTION, defaultOrders)
+            seedCollection<Order>(ORDERS_COLLECTION, defaultOrders),
+            seedCollection<Product>(PRODUCTS_COLLECTION, defaultProducts),
         ]);
     } catch (e) {
         console.error("Error seeding database: ", e);
@@ -81,6 +84,23 @@ export const findUserByCredentials = async (email: string, password?: string): P
     return { ...userDoc.data(), id: userDoc.id } as User;
 }
 
+export const updateUser = async (userId: string, data: UpdateUser): Promise<void> => {
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    await updateDoc(userRef, data);
+};
+
+// --- Products ---
+export const getProducts = async (): Promise<Product[]> => {
+    const productsCol = collection(db, PRODUCTS_COLLECTION);
+    const productSnapshot = await getDocs(productsCol);
+    return productSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
+};
+
+export const updateProduct = async (productId: string, data: UpdateProduct): Promise<void> => {
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+    await updateDoc(productRef, data);
+};
+
 // --- Orders ---
 export const getOrders = async (): Promise<Order[]> => {
     const ordersCol = collection(db, ORDERS_COLLECTION);
@@ -115,4 +135,9 @@ export const getLocations = async (): Promise<Location[]> => {
     const locationsCol = collection(db, LOCATIONS_COLLECTION);
     const locationSnapshot = await getDocs(locationsCol);
     return locationSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Location));
+};
+
+export const updateLocation = async (locationId: string, data: UpdateLocation): Promise<void> => {
+    const locationRef = doc(db, LOCATIONS_COLLECTION, locationId);
+    await updateDoc(locationRef, data);
 };

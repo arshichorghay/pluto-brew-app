@@ -8,6 +8,7 @@ export interface User {
 }
 
 export type NewUser = Omit<User, 'id'>;
+export type UpdateUser = Partial<Omit<User, 'id' | 'password'>>;
 
 export interface Product {
   id: string;
@@ -19,6 +20,9 @@ export interface Product {
   category: string;
   'data-ai-hint'?: string;
 }
+
+export type NewProduct = Omit<Product, 'id'>;
+export type UpdateProduct = Partial<NewProduct>;
 
 export interface CartItem extends Product {
   quantity: number;
@@ -45,6 +49,10 @@ export interface Location {
     lat: number;
     lng: number;
 }
+
+export type NewLocation = Omit<Location, 'id'>;
+export type UpdateLocation = Partial<NewLocation>;
+
 
 export interface LocationInfo {
   type: 'pickup' | 'delivery';
