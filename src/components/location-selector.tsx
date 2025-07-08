@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,38 +33,53 @@ function MapControl() {
   const [lngInput, setLngInput] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: selectedLocation.lat, lng: selectedLocation.lng });
   
-  const geocodingLib = useMapsLibrary('geocoding');
-  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+  const placesLib = useMapsLibrary('places');
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!geocodingLib) return;
-    setGeocoder(new geocodingLib.Geocoder());
-  }, [geocodingLib]);
+    if (!placesLib || !addressInputRef.current) return;
+
+    const autocompleteService = new placesLib.Autocomplete(addressInputRef.current, {
+        fields: ["geometry", "name", "formatted_address"],
+        types: ["address"]
+    });
+    setAutocomplete(autocompleteService);
+  }, [placesLib]);
+
 
   useEffect(() => {
-    if (!deliveryPin) {
+    if (!autocomplete) return;
+
+    const listener = autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.geometry?.location) {
+            const newPin = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+            };
+            setDeliveryPin(newPin);
+            setMapCenter(newPin);
+            setAddress(place.formatted_address || place.name || '');
+            setLatInput(newPin.lat.toString());
+            setLngInput(newPin.lng.toString());
+            toast({ title: 'Location Found', description: `Pin set for ${place.formatted_address}` });
+        }
+    });
+
+    return () => {
+        google.maps.event.removeListener(listener);
+    };
+  }, [autocomplete, toast]);
+
+  useEffect(() => {
+    if (deliveryPin) {
+      setMapCenter(deliveryPin);
+    } else {
       setMapCenter({ lat: selectedLocation.lat, lng: selectedLocation.lng });
     }
   }, [selectedLocation, deliveryPin]);
-
-  const handleAddressSearch = () => {
-    if (!geocoder || !address) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Please enter an address.' });
-      return;
-    }
-    geocoder.geocode({ address }, (results, status) => {
-      if (status === 'OK' && results && results[0]) {
-        const location = results[0].geometry.location;
-        const newPin = { lat: location.lat(), lng: location.lng() };
-        setDeliveryPin(newPin);
-        setMapCenter(newPin);
-        toast({ title: 'Location Found', description: `Pin set for ${results[0].formatted_address}` });
-      } else {
-        toast({ variant: 'destructive', title: 'Geocode Error', description: `Could not find location: ${status}` });
-      }
-    });
-  };
 
   const handleCoordinateSet = () => {
     const lat = parseFloat(latInput);
@@ -78,12 +94,25 @@ function MapControl() {
     toast({ title: 'Location Set', description: `Pin set to Lat: ${lat}, Lng: ${lng}` });
   };
 
+  const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    if (!e.latLng) return;
+    const newPin = {
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+    setDeliveryPin(newPin);
+    setLatInput(newPin.lat.toFixed(6));
+    setLngInput(newPin.lng.toFixed(6));
+    setAddress(""); // Clear address when clicking map
+    toast({ title: "Location Set", description: "Delivery pin updated on the map." });
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Select Location</CardTitle>
         <CardDescription>
-          Choose a pickup location or set a delivery address by searching or entering coordinates.
+          Choose a pickup store, search for a delivery address, or click the map to set your location.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6">
@@ -115,6 +144,7 @@ function MapControl() {
             zoom={13}
             mapId="pluto_brew_map"
             gestureHandling={'greedy'}
+            onClick={handleMapClick}
           >
             <AdvancedMarker
               position={{
@@ -136,16 +166,13 @@ function MapControl() {
 
         <div className="grid gap-2">
             <Label htmlFor="address-search">Search for delivery address</Label>
-            <div className="flex gap-2">
-                <Input 
-                    id="address-search" 
-                    placeholder="e.g., 1600 Amphitheatre Parkway, Mountain View, CA"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddressSearch()}
-                />
-                <Button onClick={handleAddressSearch}>Search</Button>
-            </div>
+            <Input 
+                id="address-search" 
+                ref={addressInputRef}
+                placeholder="Start typing your delivery address..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+            />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
@@ -153,7 +180,7 @@ function MapControl() {
                 <Label htmlFor="lat-input">Latitude</Label>
                 <Input 
                     id="lat-input" 
-                    placeholder="e.g., 37.422"
+                    placeholder="e.g., 49.0093"
                     value={latInput}
                     onChange={(e) => setLatInput(e.target.value)}
                 />
@@ -162,12 +189,12 @@ function MapControl() {
                 <Label htmlFor="lng-input">Longitude</Label>
                 <Input 
                     id="lng-input" 
-                    placeholder="e.g., -122.084"
+                    placeholder="e.g., 8.4044"
                     value={lngInput}
                     onChange={(e) => setLngInput(e.target.value)}
                 />
             </div>
-            <Button onClick={handleCoordinateSet} className="w-full">Set Pin</Button>
+            <Button onClick={handleCoordinateSet} className="w-full">Set from Coords</Button>
         </div>
       </CardContent>
     </Card>
@@ -193,7 +220,7 @@ export function LocationSelector() {
   }
 
   return (
-    <APIProvider apiKey={apiKey}>
+    <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
       <MapControl />
     </APIProvider>
   );

@@ -25,9 +25,9 @@ export const mockOrders: Order[] = [
 ];
 
 export const mockLocations: Location[] = [
-    { id: '1', name: 'Pluto Brew Karlsruhe', lat: 49.0069, lng: 8.4037 },
-    { id: '2', name: 'Pluto Brew Berlin', lat: 52.5200, lng: 13.4050 },
-    { id: '3', name: 'Pluto Brew Munich', lat: 48.1351, lng: 11.5820 },
-    { id: '4', name: 'Pluto Brew Hamburg', lat: 53.5511, lng: 9.9937 },
-    { id: '5', name: 'Pluto Brew Cologne', lat: 50.9375, lng: 6.9603 },
+    { id: '1', name: 'Pluto Brew - Innenstadt', lat: 49.0093, lng: 8.4044 },
+    { id: '2', name: 'Pluto Brew - Weststadt', lat: 49.011, lng: 8.380 },
+    { id: '3', name: 'Pluto Brew - Oststadt', lat: 49.010, lng: 8.425 },
+    { id: '4', name: 'Pluto Brew - Südstadt', lat: 49.000, lng: 8.404 },
+    { id: '5', name: 'Pluto Brew - Durlach', lat: 48.998, lng: 8.473 },
 ]
