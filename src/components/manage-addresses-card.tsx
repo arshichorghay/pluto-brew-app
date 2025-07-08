@@ -148,7 +148,7 @@ export function ManageAddressesCard() {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent 
                     className="max-w-2xl"
-                    onPointerDownOutside={(e) => {
+                    onInteractOutside={(e) => {
                         const target = e.target as HTMLElement;
                         if (target.closest('.pac-container')) {
                             e.preventDefault();
@@ -231,6 +231,17 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         }
     }, [initialData]);
 
+    const updateLocationState = useCallback((lat: number, lng: number, addr: string) => {
+        setPin({ lat, lng });
+        setAddress(addr);
+        setMapCenter({ lat, lng });
+        setLatInput(lat.toString());
+        setLngInput(lng.toString());
+        if (addressInputRef.current) {
+            addressInputRef.current.value = addr;
+        }
+    }, []);
+
     useEffect(() => {
         if (!placesLib || !addressInputRef.current) return;
 
@@ -241,22 +252,10 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         const listener = autocomplete.addListener('place_changed', () => {
             const place = autocomplete.getPlace();
             if (place?.geometry?.location) {
-                const newPin = {
-                    lat: place.geometry.location.lat(),
-                    lng: place.geometry.location.lng(),
-                };
+                const newLat = place.geometry.location.lat();
+                const newLng = place.geometry.location.lng();
                 const formattedAddress = place.formatted_address || place.name || '';
-                
-                setPin(newPin);
-                setAddress(formattedAddress);
-                setMapCenter(newPin);
-                setLatInput(newPin.lat.toString());
-                setLngInput(newPin.lng.toString());
-
-                if (addressInputRef.current) {
-                    addressInputRef.current.value = formattedAddress;
-                }
-
+                updateLocationState(newLat, newLng, formattedAddress);
                 toast({ title: 'Location Found', description: `Pin set for ${formattedAddress}` });
             }
         });
@@ -268,21 +267,16 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
             if (addressInputRef.current) {
                 google.maps.event.clearInstanceListeners(addressInputRef.current);
             }
-            const pacContainers = document.getElementsByClassName('pac-container');
-            for (let i = 0; i < pacContainers.length; i++) {
-                pacContainers[i].remove();
-            }
+            const pacContainers = document.querySelectorAll('.pac-container');
+            pacContainers.forEach(container => container.remove());
         };
-    }, [placesLib, toast]);
+    }, [placesLib, toast, updateLocationState]);
 
-    const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (!geocodingLib || !e.latLng) return;
 
-        const newPin = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        setPin(newPin);
-        setMapCenter(newPin);
-        setLatInput(newPin.lat.toFixed(6));
-        setLngInput(newPin.lng.toFixed(6));
+        const newLat = e.latLng.lat();
+        const newLng = e.latLng.lng();
 
         const geocoder = new geocodingLib.Geocoder();
         geocoder.geocode({ location: e.latLng }, (results, status) => {
@@ -291,40 +285,35 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
                 newAddress = results[0].formatted_address;
                 toast({ title: "Location Set", description: "Address updated." });
             } else {
-                newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
+                newAddress = `Lat: ${newLat.toFixed(6)}, Lng: ${newLng.toFixed(6)}`;
                 toast({ title: "Location Set", variant: "destructive", description: "Could not find address. Using coordinates." });
             }
-            setAddress(newAddress);
-            if (addressInputRef.current) addressInputRef.current.value = newAddress;
+            updateLocationState(newLat, newLng, newAddress);
         });
-    }
+    }, [geocodingLib, toast, updateLocationState]);
     
-    const handleCoordinateSet = () => {
+    const handleCoordinateSet = useCallback(() => {
         const lat = parseFloat(latInput);
         const lng = parseFloat(lngInput);
         if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
           toast({ variant: 'destructive', title: 'Invalid Coordinates', description: 'Please enter valid latitude and longitude.' });
           return;
         }
-        const newPin = { lat, lng };
-        setPin(newPin);
-        setMapCenter(newPin);
         
         if (!geocodingLib) return;
         const geocoder = new geocodingLib.Geocoder();
-        geocoder.geocode({ location: newPin }, (results, status) => {
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
             let newAddress = '';
             if (status === 'OK' && results?.[0]) {
                 newAddress = results[0].formatted_address;
                 toast({ title: "Location Set", description: `Address found for coordinates.` });
             } else {
-                newAddress = `Lat: ${newPin.lat.toFixed(6)}, Lng: ${newPin.lng.toFixed(6)}`;
+                newAddress = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
                 toast({ title: "Location Set", description: 'Using coordinates as address.' });
             }
-            setAddress(newAddress);
-            if (addressInputRef.current) addressInputRef.current.value = newAddress;
+            updateLocationState(lat, lng, newAddress);
         });
-      };
+      }, [latInput, lngInput, geocodingLib, toast, updateLocationState]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
