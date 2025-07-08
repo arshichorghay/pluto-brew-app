@@ -40,7 +40,6 @@ const AutocompleteInput = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
         if (!autocompleteRef.current) {
             autocompleteRef.current = new places.Autocomplete(inputRef.current, {
                 fields: ["geometry", "formatted_address", "name"],
-                types: ["address"],
                 // Bias search results to the Karlsruhe area around KIT
                 locationBias: {
                     center: kitCampusCenter,
