@@ -159,11 +159,13 @@ export function ManageAddressesCard() {
                         <DialogTitle>{addressToEdit ? 'Edit' : 'Add'} Address</DialogTitle>
                     </DialogHeader>
                     <APIProvider apiKey={apiKey} libraries={['places', 'geocoding']}>
-                        <AddressForm 
-                            onSave={handleFormSave} 
-                            onCancel={() => setIsFormOpen(false)}
-                            initialData={addressToEdit}
-                        />
+                       {isFormOpen && (
+                            <AddressForm 
+                                onSave={handleFormSave} 
+                                onCancel={() => setIsFormOpen(false)}
+                                initialData={addressToEdit}
+                            />
+                       )}
                     </APIProvider>
                 </DialogContent>
             </Dialog>
@@ -236,16 +238,18 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         });
 
         return () => {
-            if (listener) {
-                google.maps.event.removeListener(listener);
-            }
-            if (addressInputRef.current && typeof google !== 'undefined') {
-                google.maps.event.clearInstanceListeners(addressInputRef.current);
+            if (typeof google !== 'undefined') {
+                if (listener) {
+                    google.maps.event.removeListener(listener);
+                }
+                if (addressInputRef.current) {
+                    google.maps.event.clearInstanceListeners(addressInputRef.current);
+                }
             }
             const pacContainers = document.querySelectorAll('.pac-container');
             pacContainers.forEach(container => container.remove());
         };
-    }, [placesLib, toast, updateLocationState, initialData]);
+    }, [placesLib, toast, updateLocationState]);
 
     const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
         if (!geocodingLib || !e.latLng) return;
@@ -358,3 +362,5 @@ function AddressForm({ onSave, onCancel, initialData }: AddressFormProps) {
         </form>
     );
 }
+
+    
